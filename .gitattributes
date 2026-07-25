@@ -1,0 +1,18 @@
+# Normalise les fins de ligne : LF dans le dépôt et à l'extraction, pour tout
+# fichier texte, quel que soit l'OS. Met fin aux avertissements LF/CRLF sous Windows.
+* text=auto eol=lf
+
+# Fichiers binaires : aucune conversion.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.webp binary
+*.woff  binary
+*.woff2 binary
+*.ttf  binary
+*.eot  binary
+*.pdf  binary
+*.xlsx binary
+*.zip  binary
