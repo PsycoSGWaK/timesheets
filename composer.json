@@ -83,6 +83,7 @@
     "require-dev": {
         "phpoffice/phpspreadsheet": "^5.9",
         "phpstan/phpstan": "^2.2",
+        "phpstan/phpstan-doctrine": "^2.0",
         "phpunit/phpunit": "^12.5",
         "symfony/browser-kit": "7.4.*",
         "symfony/css-selector": "7.4.*",
