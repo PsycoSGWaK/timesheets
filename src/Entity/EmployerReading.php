@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Domain\Time\Minutes;
+use App\Repository\EmployerReadingRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -20,7 +21,7 @@ use Doctrine\ORM\Mapping as ORM;
  * C'est une entité de contrôle : nos propres `DayFact` restent la référence, ce relevé
  * sert à mesurer l'écart.
  */
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: EmployerReadingRepository::class)]
 #[ORM\Table(name: 'employer_reading')]
 #[ORM\Index(name: 'idx_reading_date', columns: ['date'])]
 final class EmployerReading
