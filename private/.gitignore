@@ -1,0 +1,5 @@
+# Rien de ce dossier ne doit partir dans git : il contient des donnees
+# personnelles reelles (horaires de badgeage, exports de pointeuse).
+*
+!.gitignore
+!README.md
