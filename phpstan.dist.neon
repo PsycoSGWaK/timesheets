@@ -1,3 +1,7 @@
+includes:
+    - vendor/phpstan/phpstan-doctrine/extension.neon
+    - vendor/phpstan/phpstan-doctrine/rules.neon
+
 parameters:
     level: 6
     paths:
@@ -6,3 +10,9 @@ parameters:
         - public/
         - src/
         - tests/
+    excludePaths:
+        # Fichier auto-généré par Symfony (array-shapes de configuration) : pas du
+        # code applicatif, et ses type-aliases ne se résolvent pas sous analyse.
+        - config/reference.php
+    doctrine:
+        objectManagerLoader: tests/object-manager.php
