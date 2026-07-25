@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Council Report — App de pointages</title>
+<style>
+  :root{
+    --bg:#fbfaf8; --card:#fff; --ink:#1c1b19; --muted:#6b6862; --line:#e5e1da;
+    --accent:#8a5a2b; --ok:#2f6f4f; --warn:#9a4b2b; --chip:#f2eee7;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#141311; --card:#1c1b19; --ink:#eae6df; --muted:#a09a90; --line:#2e2b27;
+           --accent:#d3a06a; --ok:#6cc094; --warn:#e08a63; --chip:#26241f; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:860px;margin:0 auto;padding:48px 24px 80px}
+  header{border-bottom:1px solid var(--line);padding-bottom:24px;margin-bottom:36px}
+  .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+  h1{font-size:30px;line-height:1.2;margin:0 0 12px;letter-spacing:-.02em}
+  .q{color:var(--muted);font-size:15px;margin:0}
+  h2{font-size:20px;margin:44px 0 14px;letter-spacing:-.01em}
+  h3{font-size:15px;margin:24px 0 8px}
+  p,li{font-size:15px}
+  ul{padding-left:20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px 22px;margin:16px 0}
+  .verdict{border-left:3px solid var(--accent)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:18px 0}
+  .adv{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .adv .name{font-weight:600;font-size:14px;margin:0 0 6px}
+  .adv .pos{font-size:13px;color:var(--muted);margin:0}
+  .bar{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:13px}
+  .bar .lbl{flex:0 0 210px;color:var(--muted)}
+  .dots{display:flex;gap:5px}
+  .dot{width:11px;height:11px;border-radius:50%;background:var(--line)}
+  .dot.on{background:var(--ok)}
+  .dot.no{background:var(--warn)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+  .scroll{overflow-x:auto}
+  details{border:1px solid var(--line);border-radius:10px;padding:0;margin:10px 0;background:var(--card)}
+  summary{cursor:pointer;padding:13px 18px;font-weight:600;font-size:14px;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"▸ ";color:var(--muted)}
+  details[open] summary::before{content:"▾ "}
+  details .body{padding:2px 18px 16px;border-top:1px solid var(--line)}
+  code{background:var(--chip);padding:1px 5px;border-radius:4px;font-size:13px}
+  pre{background:var(--chip);padding:14px;border-radius:8px;overflow-x:auto;font-size:13px}
+  .chip{display:inline-block;background:var(--chip);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--muted);margin:0 6px 6px 0}
+  footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+  .first{background:var(--chip);border-radius:10px;padding:20px 22px;border:1px solid var(--line)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Council Report · 23 juillet 2026</p>
+  <h1>Application de gestion des pointages : quelle stack, quel modèle, quels pièges</h1>
+  <p class="q">Mono-utilisateur, WAMP64 déjà en place, dépôt vierge. Enjeu réel : données de temps de travail — une erreur de calcul ou une perte de données se paie en heures non réglées.</p>
+</header>
+
+<h2>Le verdict en une ligne</h2>
+<div class="card verdict">
+  <p style="margin:0"><strong>Laravel 11 + MySQL + Livewire sous WAMP</strong>, journal de badgeages <strong>immuable</strong>, heures <strong>recalculées</strong> et jamais stockées comme vérité, <strong>tout en minutes entières</strong>, sauvegarde hors-site avant la première ligne de code. Périmètre semaine 1 : import CSV → recalcul → tableau mensuel. Rien d'autre tant que les chiffres n'ont pas été validés contre trois bulletins de paie réels.</p>
+</div>
+
+<h2>Positions du conseil</h2>
+<div class="grid">
+  <div class="adv"><p class="name">Le Contrarian</p><p class="pos">« Le risque n'est pas technique, il est probatoire. Ne code pas la paie, code la présence brute. »</p></div>
+  <div class="adv"><p class="name">Le First Principles</p><p class="pos">« Tu ne construis pas un calculateur, tu construis un détecteur d'écart avec le décompte employeur. »</p></div>
+  <div class="adv"><p class="name">L'Expansionist</p><p class="pos">« Event sourcing + règles versionnées = un moteur de temps de travail réutilisable. Pose organization_id maintenant. »</p></div>
+  <div class="adv"><p class="name">L'Outsider</p><p class="pos">« Le geste quotidien décide. Un serveur local sur un PC éteint n'existe pas. Jamais de total sans son détail. »</p></div>
+  <div class="adv"><p class="name">L'Executor</p><p class="pos">« 4 tables, INT minutes, heure locale, backup avant le code, validation contre 3 bulletins. »</p></div>
+</div>
+
+<h3>Convergences et divergences</h3>
+<div class="card">
+  <div class="bar"><span class="lbl">Journal immuable / append-only</span><span class="dots"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot"></i></span></div>
+  <div class="bar"><span class="lbl">Heures dérivées, recalculables</span><span class="dots"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot"></i><i class="dot"></i></span></div>
+  <div class="bar"><span class="lbl">Sauvegarde hors-site prioritaire</span><span class="dots"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot"></i></span></div>
+  <div class="bar"><span class="lbl">Réutiliser WAMP / Laravel</span><span class="dots"><i class="dot on"></i><i class="dot on"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i></span></div>
+  <div class="bar"><span class="lbl">Heure locale vs UTC</span><span class="dots"><i class="dot on"></i><i class="dot no"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i></span></div>
+  <div class="bar"><span class="lbl">Viser un produit multi-tenant</span><span class="dots"><i class="dot on"></i><i class="dot no"></i><i class="dot no"></i><i class="dot no"></i><i class="dot"></i></span></div>
+  <p style="margin:14px 0 0;font-size:13px;color:var(--muted)">Vert = soutien · Orange = opposition explicite · Gris = non traité</p>
+</div>
+
+<h2>Où le conseil est d'accord</h2>
+<div class="card">
+<ul>
+  <li><strong>Un badgeage est un fait, pas une donnée éditable.</strong> Jamais d'UPDATE/DELETE sur la table brute. Une correction est un nouvel enregistrement daté et motivé.</li>
+  <li><strong>Les heures ne se stockent pas, elles se recalculent.</strong> Table dérivée reconstruite par une commande. Le jour où une règle de pause s'avère fausse, on rejoue trois ans.</li>
+  <li><strong>La sauvegarde hors-site passe avant la première ligne de code</strong> — et une sauvegarde jamais restaurée n'existe pas.</li>
+  <li><strong>Calculer la présence brute, pas la paie.</strong> HS majorées, contingent, annualisation, accord d'entreprise : coder ça, c'est encoder une lecture du droit qui deviendra la cible.</li>
+  <li><strong>Tout en minutes entières.</strong> Un FLOAT sur des heures et l'arrondi mange quelques minutes par mois.</li>
+</ul>
+</div>
+
+<h2>Où le conseil s'affronte — et ce qui est tranché</h2>
+<div class="scroll"><table>
+<tr><th>Sujet</th><th>Les deux camps</th><th>Tranché</th></tr>
+<tr><td><strong>UTC ou heure locale</strong></td><td>L'Expansionist veut de l'UTC (rigueur des instants). L'Executor refuse : le 25 octobre, une journée fait 25 h.</td><td><strong>Heure murale locale</strong> en <code>DATETIME</code>. La pointeuse produit une heure murale, la preuve est une heure murale. Durées calculées explicitement en minutes, jamais par un <code>diffInHours</code>.</td></tr>
+<tr><td><strong>Local ou hébergé</strong></td><td>L'Outsider : un PC éteint tue l'usage quotidien, payez 5 €/mois. L'Executor : WAMP suffit.</td><td><strong>Dépend du mode de capture.</strong> Import CSV mensuel → local suffit. Saisie au moment du badgeage → il faut du joignable depuis le téléphone. À choisir consciemment : ce sont deux produits.</td></tr>
+<tr><td><strong>Outil perso ou produit</strong></td><td>L'Expansionist voit un moteur multi-tenant pour TPE. Trois relecteurs sur cinq l'ont désigné comme le plus gros angle mort du conseil.</td><td><strong>Outil perso.</strong> Pas de <code>organization_id</code>, pas de Filament, pas de webhooks. Le projet qui vise le SaaS n'atteint jamais son premier rapport mensuel juste.</td></tr>
+<tr><td><strong>Construire ou tableur</strong></td><td>Le Contrarian : un tableur versionné couvre 90 % du besoin.</td><td><strong>Construire</strong> — mais pour ce qu'un tableur ne fait pas : réimport CSV idempotent et recalcul complet en une commande. Si ces deux-là ne sont pas au menu, le tableur gagne.</td></tr>
+</table></div>
+
+<h2>Angles morts attrapés par le peer review</h2>
+<div class="card">
+<ul>
+  <li><strong>Le droit inverse la charge de la preuve.</strong> Quatre relecteurs sur cinq le soulèvent : c'est l'employeur qui doit tenir le décompte, le salarié n'ayant qu'à présenter des éléments <em>suffisamment précis</em>. Conséquence directe : l'ancrage cryptographique et la notarisation que le Contrarian réclamait sont sur-dimensionnés. Un relevé daté et cohérent suffit.</li>
+  <li><strong>Vous pouvez demander vos propres badgeages à votre employeur</strong> (droit d'accès RGPD). Source adverse, gratuite, et c'est elle qui rend la comparaison possible. Aucun conseiller ne l'avait vu au premier tour.</li>
+  <li><strong>La prescription salariale (3 ans) dimensionne la rétention</strong> et impose un format lisible par un tiers — pas un dump MySQL.</li>
+  <li><strong>Idempotence de l'import : le bug le plus probable du projet.</strong> Aucun conseiller n'avait défini de clé de déduplication. Réimporter le même CSV double les heures, silencieusement.</li>
+  <li><strong>Pièges MySQL :</strong> <code>TIMESTAMP</code> convertit selon le fuseau de session (bug de paie invisible) — utiliser <code>DATETIME</code>, InnoDB, utf8mb4. Les exports de pointeuse sont souvent en CP1252, pas en UTF-8.</li>
+  <li><strong>Zéro test dans les cinq réponses</strong>, sur des données de paie. Cas limites obligatoires : 25 et 26 octobre, badgeage manquant, double badgeage, poste à cheval sur minuit, jour férié.</li>
+  <li><strong>Personne ne sait à quoi ressemble le CSV de la pointeuse</strong> — alors que tout le projet démarre par cet import.</li>
+</ul>
+<p style="font-size:13px;color:var(--muted);margin-bottom:0">Les points juridiques ci-dessus sont des repères de conception, pas un conseil juridique : à vérifier auprès d'une source compétente avant de vous en servir dans un désaccord réel.</p>
+</div>
+
+<h2>La recommandation</h2>
+<div class="card verdict">
+<h3 style="margin-top:0">Stack</h3>
+<p>PHP 8.2 · <strong>Laravel 11</strong> · <strong>MySQL 8</strong> · <strong>Livewire 3</strong> + Blade, servi par un vhost <code>timesheets.test</code> sous WAMP. Pas de SPA, pas d'API séparée, pas de Filament, pas de PWA au démarrage. <code>dompdf</code> et <code>laravel-excel</code> arrivent quand les chiffres sont justes, pas avant.</p>
+
+<h3>Modèle de données</h3>
+<pre>punch_events   id, punched_at DATETIME (heure murale locale), direction(in|out),
+               source(csv|manual), import_batch_id, dedup_key UNIQUE,
+               raw_line, superseded_by, created_at        -- jamais d'UPDATE
+
+day_facts      work_date, type(travail|congé|RTT|maladie|férié|télétravail), note
+               -- une journée bancale doit être tolérée, pas rejetée
+
+workdays       work_date, worked_minutes, break_minutes, overtime_minutes,
+               employer_minutes, delta_minutes, locked
+               -- 100% dérivée : php artisan timesheet:recompute --from=…
+
+balance_ledger work_date, delta_minutes INT, reason
+               -- le solde est une somme, jamais un champ mutable
+
+rule_sets      effective_from, hebdo_minutes(2100), pause_rules, arrondi
+               -- versionné par date d'effet : les règles changent
+
+import_batches file_hash, imported_at, rows_ok, rows_skipped</pre>
+<p>La colonne <code>employer_minutes</code> est le point que seul le First Principles avait vu : le livrable qui a de la valeur n'est pas « j'ai fait 152 h », c'est « le SIRH dit 149 h, moi 152 h, voici les trois jours qui divergent ».</p>
+
+<h3>Périmètre, dans l'ordre</h3>
+<ul>
+  <li><strong>Jour 0</strong> — sauvegarde : <code>mysqldump</code> en tâche planifiée Windows vers un dossier synchronisé, plus un export CSV/JSON lisible à l'œil nu. Une restauration testée pour de vrai.</li>
+  <li><strong>Semaine 1</strong> — import CSV idempotent, commande de recalcul, tableau mensuel. Chaque total cliquable jusqu'au détail : lignes, pauses déduites, arrondis appliqués. Un total non vérifiable ne s'oppose à personne.</li>
+  <li><strong>Semaine 2</strong> — tests sur les cas limites, puis confrontation à trois bulletins de paie réels. Tant que ça ne tombe pas juste, aucune feature nouvelle.</li>
+  <li><strong>Ensuite</strong> — saisie des absences, solde de récup, export PDF/Excel, alertes. La PWA et le multi-utilisateur : seulement si le besoin survit à trois mois d'usage. Ouvrir l'outil à des collègues fait de vous un responsable de traitement RGPD.</li>
+</ul>
+</div>
+
+<h2>La seule chose à faire en premier</h2>
+<div class="first">
+<p style="margin:0"><strong>Mettre la main sur un vrai export de vos badgeages</strong> — le CSV de la pointeuse, ou une demande d'accès à vos propres données auprès de l'employeur. Ouvrez le fichier et regardez-le.</p>
+<p style="margin:12px 0 0;color:var(--muted)">Le format des lignes, la présence ou non des sorties, l'encodage, la fréquence de disponibilité : ces quatre observations décident du schéma, des arrondis, du mode de capture et même de la question « application ou tableur ». Écrire du code avant d'avoir ce fichier sous les yeux, c'est concevoir contre une pointeuse imaginaire.</p>
+</div>
+
+<h2>Le détail</h2>
+<details><summary>Le Contrarian — « le risque est probatoire, pas technique »</summary><div class="body">
+<p>MySQL sur WAMP est un point de défaillance unique : un PC, un disque, zéro réplication, zéro sauvegarde hors-site. Trois ans de pointages disparaissent avec le SSD. Et l'app ne tourne que quand la machine est allumée — la « PWA mobile » ne pointera jamais rien.</p>
+<p>Une base locale modifiable à volonté a une valeur probatoire faible : un relevé personnel n'est sérieux que s'il est difficile à antidater. Journal append-only, plus un ancrage externe (PDF mensuel auto-envoyé par mail, commits signés). Sinon c'est un outil de confort, pas une preuve.</p>
+<p>« Calcul automatique des heures » est le piège : 35 h, HS majorées, contingent, annualisation, accord d'entreprise, pauses rémunérées ou non, forfait, fériés — votre code encodera <em>votre</em> lecture du droit, et c'est votre formule qui sera attaquée. Calculez la présence brute. Le solde d'heures est une hypothèse à confronter au bulletin.</p>
+<p>La source de vérité reste la pointeuse : sans réimport reproductible, l'app est une copie divergente. Et ouvrir aux collègues vous rend responsable de traitement RGPD. Question évitée : un tableur versionné avec sauvegarde cloud couvre 90 % du besoin — qu'apporte l'app de plus ?</p>
+</div></details>
+
+<details><summary>Le First Principles — « vous construisez un détecteur de désaccord »</summary><div class="body">
+<p>« Quelle stack ? » suppose que le problème est logiciel. Il ne l'est pas. Le job à faire n'est pas « calculer mes heures », c'est « pouvoir prouver mes heures contre celles de mon employeur ».</p>
+<p><strong>Le calcul n'est pas la valeur, la capture l'est.</strong> D'où viennent les données ? Export pointeuse — à quelle fréquence, quel format, l'aurez-vous encore dans deux ans ? Ou double saisie manuelle ? Répondez avant d'écrire une ligne de code. Si l'export est mensuel et fragile, votre vrai projet est un rituel de sauvegarde, pas une application.</p>
+<p><strong>Le chiffre utile n'est pas « j'ai fait 152 h »</strong>, c'est « le SIRH dit 149 h, moi 152 h, voici les trois jours qui divergent ». Cela change le modèle : deux sources stockées, plus l'écart.</p>
+<p>Un pointage est un fait daté, jamais modifié ; toute correction est un événement supplémentaire horodaté et motivé. Corollaire : le format de stockage prime sur la stack. Des fichiers lisibles dans dix ans sans WAMP valent mieux qu'un MySQL local perdu au prochain reformatage. L'app n'est qu'une vue.</p>
+</div></details>
+
+<details><summary>L'Expansionist — « vous sous-estimez ce que vous construisez »</summary><div class="body">
+<p>Ne modélisez pas des heures travaillées : modélisez un journal d'événements immuable. Les heures calculées ne sont jamais stockées comme vérité — dérivées, versionnées, recalculables. Quand vous découvrirez dans six mois que votre règle de pause était fausse, vous rejouez trois ans en une commande.</p>
+<p>Externalisez les règles : un <code>rule_set</code> versionné en JSON avec date d'effet (35 h, seuils 25 %/50 %, pause 20 min après 6 h, fériés). Vous venez d'écrire un moteur de calcul du temps de travail français — ce qui manque à des milliers de TPE sous Excel. Le passage mono-user → multi-tenant coûte une colonne <code>organization_id</code> si vous la posez maintenant.</p>
+<p>Stack : Laravel 11 + MySQL 8 + Filament v3 pour un back-office complet en quelques jours. PWA Livewire ou Vue avec queue IndexedDB pour le badgeage hors-ligne. Opportunités adjacentes : un adaptateur CSV par marque de pointeuse, un compteur de récup qui devient un module congés/RTT, une API et des webhooks.</p>
+<p class="chip">Désigné comme le plus gros angle mort par 3 relecteurs sur 5</p>
+</div></details>
+
+<details><summary>L'Outsider — « le geste quotidien décide, pas la stack »</summary><div class="body">
+<p>Le cas d'usage réel : « il est 18 h 12, je viens de badger, je saisis ça où ? ». Si la réponse est « je rentre chez moi, j'allume mon PC, je lance WAMP », l'app est morte en trois semaines. Payez 5 €/mois un hébergement joignable depuis le téléphone, ou assumez une app qui ne sert qu'une fois par mois pour importer un CSV — les deux sont valides, mais ce sont deux produits différents.</p>
+<p><strong>Ne jamais afficher un total sans son calcul.</strong> « +3 h 27 ce mois » doit être cliquable : les lignes, les pauses déduites, les arrondis appliqués. Le détail du calcul <em>est</em> la fonctionnalité.</p>
+<p><strong>La saisie sera fausse, tout le temps.</strong> Oubli de badgeage, double badgeage, congé. Dès le jour 1 : journée incomplète tolérée sans plantage, motifs (congé, RTT, télétravail, maladie), correction rétroactive facile. Une app qui refuse une journée bancale sera contournée dans Excel.</p>
+<p><strong>La vérité doit survivre à l'app :</strong> export CSV/JSON automatique, lisible à l'œil nu, hors MySQL. Et un écran d'accueil qui répond en une seconde à « où j'en suis ce mois-ci ? ».</p>
+</div></details>
+
+<details><summary>L'Executor — « ce que tu fais lundi matin »</summary><div class="body">
+<p>N'invente rien, utilise ce qui tourne déjà : PHP 8.2 + Laravel 11 + MySQL sous WAMP, Livewire 3, Blade. Pas de SPA React, pas d'API séparée — trois semaines de plus pour zéro valeur sur un mono-utilisateur.</p>
+<pre>composer create-project laravel/laravel .
+composer require livewire/livewire barryvdh/laravel-dompdf maatwebsite/excel</pre>
+<p>Vhost <code>timesheets.test</code> dans <code>httpd-vhosts.conf</code>, pas <code>php artisan serve</code>.</p>
+<p>Quatre tables : <code>punches</code> (jamais modifiée, correction = nouvelle ligne + <code>superseded_by</code>), <code>workdays</code> dérivée et recalculable par <code>php artisan timesheet:recompute</code>, <code>balance_ledger</code> où le solde est une somme, <code>settings</code>.</p>
+<p>Trois règles non négociables : <strong>tout en INT minutes</strong> (un FLOAT et tu perds trois minutes par mois) ; <strong>pas d'UTC</strong> (le 25 octobre, une journée fait 25 h) ; <strong>backup avant le code</strong> (tâche planifiée Windows, quinze minutes de travail, c'est l'assurance-litige).</p>
+<p>Semaine 1 = import CSV + calcul + tableau mensuel. Rien d'autre. PDF, PWA, alertes en semaine 4, quand les chiffres sont prouvés justes contre trois bulletins de paie réels.</p>
+<p class="chip">Élue réponse la plus forte par 4 relecteurs sur 5</p>
+</div></details>
+
+<details><summary>Peer review — les cinq relectures anonymisées</summary><div class="body">
+<p><strong>Review 1</strong> — La plus forte : l'Executor, seule à livrer un plan exécutable sans dette, et à traiter correctement le 25 octobre là où l'Expansionist recommande l'UTC sans dire comment gérer la journée de 25 h. Angle mort : l'Expansionist, qui transforme un besoin perso en produit multi-tenant. Manqué par tous : le droit inverse la charge de la preuve, la demande d'accès RGPD est le levier le plus rentable, la prescription de 3 ans fixe la rétention.</p>
+<p><strong>Review 2</strong> — La plus forte : l'Executor ; le refus explicite de l'UTC pour cause de changement d'heure est la bonne décision. Angle mort : le Contrarian, qui pose la valeur probatoire comme obstacle sans connaître le régime — une base locale non notariée suffit largement, et il décourage le projet sur une prémisse fausse. Manqué par tous : les tests unitaires sur cas limites, l'idempotence de l'import (aucune clé de déduplication définie), le piège <code>TIMESTAMP</code>/<code>DATETIME</code> et l'encodage CP1252 des CSV.</p>
+<p><strong>Review 3</strong> — La plus solide : l'Executor, seule réponse exécutable et datée ; le Contrarian et le First Principles ont le meilleur cadrage du risque mais ne laissent rien à construire. Angle mort : l'Expansionist, dont le <code>rule_set</code> versionné encode une interprétation juridique que personne n'a validée. Manqué par tous : la prescription et l'ordre de preuve fixent la rétention et le format ; personne ne parle du coût de sortie (changement d'employeur ou de pointeuse).</p>
+<p><strong>Review 4</strong> — La plus forte : le First Principles, seul à reformuler correctement le job ; l'Executor reste le meilleur binôme d'exécution — l'un donne le cap, l'autre le plan. Angle mort : l'Expansionist, six mois de maintenance pour un usage qui mourra avant. Manqué par tous : la charge de preuve partagée, l'accès aux données par le RGPD qui conditionne tout le projet, la prescription, les tests de non-régression.</p>
+<p><strong>Review 5</strong> — La plus forte : l'Executor, la seule qu'on peut suivre lundi matin sans rien deviner. Angle mort : le Contrarian, qui démolit le projet puis conclut « un tableur suffit » — quelqu'un qui a déjà créé son dépôt git ne veut pas d'un tableur, et aucune alternative exécutable n'est proposée. Manqué par tous : personne ne dit à quoi ressemble concrètement le CSV d'une pointeuse, alors que tout le projet démarre par cet import.</p>
+</div></details>
+
+<footer>
+  Conseil réuni le 23 juillet 2026 · 5 conseillers, peer review anonymisée, synthèse du président.<br>
+  Transcript complet : <code>council-transcript-2026-07-23.md</code> · Méthodologie : LLM Council (Andrej Karpathy).
+</footer>
+
+</div>
+</body>
+</html>
