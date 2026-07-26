@@ -1,0 +1,59 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Quand puis-je partir ?{% endblock %}
+
+{% block stylesheets %}
+<style>
+    :root { --border: #d0d0d7; --muted: #6b6b76; --accent: #2f5fdc; }
+    body { font-family: system-ui, sans-serif; color: #1a1a1f; margin: 0; background: #fff; }
+    main { max-width: 560px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+    h1 { font-size: 1.4rem; }
+    label { display: block; font-weight: 600; margin: .9rem 0 .3rem; }
+    input[type=time] { padding: .45rem; border: 1px solid var(--border); border-radius: 6px; font-size: 1rem; }
+    button { margin-top: 1.2rem; padding: .55rem 1.1rem; border: 0; border-radius: 8px;
+        background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; }
+    .error { background: #fdecec; color: #a12020; padding: .75rem 1rem; border-radius: 8px; }
+    .result { margin-top: 1.5rem; padding: 1.25rem; background: #eef3fe; border-radius: 10px; }
+    .result .leave { font-size: 2rem; font-weight: 700; color: var(--accent); }
+    .result ul { margin: .75rem 0 0; padding-left: 1.1rem; color: var(--muted); font-size: .9rem; }
+    a { color: var(--accent); }
+</style>
+{% endblock %}
+
+{% block body %}
+<main>
+    <h1>À quelle heure puis-je partir ?</h1>
+
+    {% if error %}
+        <p class="error">Horaire illisible : {{ error }}</p>
+    {% endif %}
+
+    <form method="post" action="{{ path('projection') }}">
+        <label for="morning_start">Prise de poste</label>
+        <input type="time" id="morning_start" name="morning_start" value="{{ morningStart }}" required>
+
+        <label for="lunch_departure">Départ en pause déjeuner</label>
+        <input type="time" id="lunch_departure" name="lunch_departure" value="{{ lunchDeparture }}" required>
+
+        <label for="lunch_return">Retour de pause</label>
+        <input type="time" id="lunch_return" name="lunch_return" value="{{ lunchReturn }}" required>
+
+        <div><button type="submit">Calculer ma sortie</button></div>
+    </form>
+
+    {% if estimate %}
+        <div class="result">
+            <div>Tu peux partir à</div>
+            <div class="leave">{{ estimate.expectedLeave.toClock }}</div>
+            <ul>
+                <li>Travail du matin : {{ estimate.morningWorked.value|duree }}</li>
+                <li>Pause : {{ estimate.breakDuration.value|duree }}{% if estimate.breakPenalty.value > 0 %}
+                    (pénalité de {{ estimate.breakPenalty.value|duree }} pour pause trop courte){% endif %}</li>
+                <li>Objectif visé : {{ estimate.objective.value|duree }}</li>
+            </ul>
+        </div>
+    {% endif %}
+
+    <p style="margin-top:2rem"><a href="{{ path('week_current') }}">← Voir ma semaine</a></p>
+</main>
+{% endblock %}
