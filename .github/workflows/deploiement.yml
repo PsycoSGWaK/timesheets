@@ -1,0 +1,200 @@
+# Deploiement continu vers o2switch.
+#
+# Calque sur le workflow eprouve du portfolio, dont il reprend les corrections
+# deja payees. Trois principes hérités :
+#
+#   1. Tout ce qui est couteux ou fragile (composer install, compilation des
+#      assets) tourne sur le runner GitHub, jamais sur l'hebergement mutualise :
+#      les extensions PHP d'o2switch se reinitialisent aux mises a jour de build
+#      et cassaient regulierement composer.
+#   2. L'acces SSH est ouvert a la volee. Le pare-feu d'o2switch filtre par IP
+#      source et les runners GitHub ont des IP imprevisibles ; l'API cPanel
+#      SshWhitelist permet d'autoriser l'IP du runner pour la duree du job.
+#      (La voie webhook HTTPS a ete essayee sur le portfolio et echoue : le
+#      pare-feu bloque le trafic entrant venant d'IP de datacenter.)
+#   3. Repartition des roles : le code source arrive par git (reset --hard sur
+#      origin/main), seuls les artefacts gitignores (vendor, assets compiles)
+#      arrivent par rsync. Aucun --delete a la racine du projet, pour que le
+#      .env.local de production ne puisse pas etre detruit par une erreur de
+#      configuration du transfert.
+#
+# Contrairement au portfolio, cette application n'a jamais eu de deploiement par
+# cron : il n'y a donc aucune ligne de crontab a desactiver au prealable.
+#
+name: Deploiement o2switch
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # Deux deploiements simultanes se marcheraient dessus, et la liste blanche SSH
+  # est un etat partage limite a 5 entrees.
+  group: o2switch-deploy-timesheets
+  cancel-in-progress: false
+
+env:
+  REPO_DISTANT: repositories/timesheets
+  PHP_DISTANT: /usr/local/bin/php
+  BASE_URL: https://timesheets.idevnormandie.fr
+
+jobs:
+  deploiement:
+    name: Construit puis deploie
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Recupere le code
+        uses: actions/checkout@v4
+
+      - name: Installe PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: ctype, iconv, dom, intl, mbstring, pdo_mysql, zip
+          coverage: none
+
+      - name: Installe les dependances PHP
+        env:
+          APP_ENV: prod
+          # Valeur bidon : elle ne sert qu'a faire demarrer le kernel pendant le
+          # build. Le vrai secret vit dans le .env.local du serveur, et var/cache
+          # n'est jamais transfere.
+          APP_SECRET: build-uniquement-non-utilise-en-production
+        run: composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+
+      - name: Compile les assets
+        env:
+          APP_ENV: prod
+          APP_SECRET: build-uniquement-non-utilise-en-production
+        run: php bin/console asset-map:compile --no-interaction
+
+      - name: Recupere l'IP publique du runner
+        id: ip
+        run: |
+          IP="$(curl -fsS --retry 3 --retry-delay 2 -m 15 https://api.ipify.org)"
+          if [ -z "$IP" ]; then
+            echo "::error::Impossible de determiner l'IP publique du runner."
+            exit 1
+          fi
+          echo "IP du runner : $IP"
+          echo "ipv4=$IP" >> "$GITHUB_OUTPUT"
+
+      - name: Vide la liste blanche SSH
+        # La liste est plafonnee a 5 entrees et se remplit d'IP de runners
+        # disparues, ce qui finit par bloquer tout deploiement. On repart donc
+        # d'une liste vide a chaque execution.
+        #
+        # Choix assume : cela efface aussi l'IP personnelle, dont depend l'acces
+        # SSH manuel. Il faut la re-autoriser depuis cPanel apres un deploiement.
+        run: |
+          REPONSE="$(curl -sS -m 60 \
+            -H "Authorization: cpanel ${{ secrets.CPANEL_USERNAME }}:${{ secrets.CPANEL_API_TOKEN }}" \
+            "https://${{ secrets.CPANEL_SERVER }}:2083/execute/SshWhitelist/remove_all")"
+          echo "Reponse API : $REPONSE"
+          echo "$REPONSE" | jq -e '.status == 1' > /dev/null \
+            || { echo "::error::Le vidage de la liste blanche a echoue."; exit 1; }
+
+      - name: Ouvre l'acces SSH pour l'IP du runner
+        id: whitelist
+        run: |
+          # Quelques tentatives : une suppression met, d'apres la documentation,
+          # jusqu'a quelques minutes a liberer sa place.
+          for TENTATIVE in 1 2 3; do
+            REPONSE="$(curl -sS -m 60 \
+              -H "Authorization: cpanel ${{ secrets.CPANEL_USERNAME }}:${{ secrets.CPANEL_API_TOKEN }}" \
+              "https://${{ secrets.CPANEL_SERVER }}:2083/execute/SshWhitelist/add?address=${{ steps.ip.outputs.ipv4 }}&port=22")"
+            echo "Tentative $TENTATIVE - reponse API : $REPONSE"
+            if echo "$REPONSE" | jq -e '.status == 1' > /dev/null; then
+              echo "ajoutee=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            [ "$TENTATIVE" -lt 3 ] && sleep 45
+          done
+          echo "::error::L'ajout en liste blanche a echoue apres 3 tentatives."
+          exit 1
+
+      - name: Installe la cle SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.O2SWITCH_SSH_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          cat > ~/.ssh/config <<EOF
+          Host cible
+            HostName ${{ secrets.CPANEL_SERVER }}
+            User ${{ secrets.CPANEL_USERNAME }}
+            IdentityFile ~/.ssh/id_deploy
+            IdentitiesOnly yes
+            StrictHostKeyChecking accept-new
+            ConnectTimeout 20
+          EOF
+          chmod 600 ~/.ssh/config
+
+      - name: Sauvegarde la configuration de production
+        # Filet de securite : .env.local contient l'APP_SECRET et les acces base
+        # de donnees, et n'est pas versionne.
+        run: |
+          ssh cible "cp ~/$REPO_DISTANT/.env.local ~/.env.local.timesheets.sauvegarde && chmod 600 ~/.env.local.timesheets.sauvegarde && echo 'Sauvegarde effectuee.'"
+
+      - name: Met le code source a jour depuis git
+        run: |
+          ssh cible "set -e
+            cd ~/$REPO_DISTANT
+            git fetch origin main --quiet
+            git reset --hard origin/main --quiet
+            rm -rf var/cache/*
+            echo \"Code source sur \$(git rev-parse --short HEAD)\""
+
+      - name: Transfere les dependances PHP
+        run: |
+          rsync -az --delete --timeout=120 \
+            vendor/ cible:"$REPO_DISTANT/vendor/"
+
+      - name: Transfere les assets compiles
+        run: |
+          rsync -az --delete --timeout=120 \
+            public/assets/ cible:"$REPO_DISTANT/public/assets/"
+          if [ -d assets/vendor ]; then
+            rsync -az --delete --timeout=120 \
+              assets/vendor/ cible:"$REPO_DISTANT/assets/vendor/"
+          fi
+
+      - name: Applique les migrations et reconstruit le cache
+        run: |
+          ssh cible "set -e
+            cd ~/$REPO_DISTANT
+            $PHP_DISTANT bin/console doctrine:migrations:migrate --no-interaction
+            $PHP_DISTANT bin/console cache:clear --env=prod --no-debug"
+
+      - name: Verifie que le site repond
+        # On interroge /import et /semaine, et non / : la racine redirige (302)
+        # vers l'ecran de collage.
+        run: |
+          for CHEMIN in "/import" "/semaine"; do
+            PAGE="$BASE_URL$CHEMIN"
+            CODE="$(curl -s -o /dev/null -w '%{http_code}' --retry 3 --retry-delay 5 -m 30 "$PAGE")"
+            echo "$PAGE -> $CODE"
+            [ "$CODE" = "200" ] || { echo "::error::$PAGE renvoie $CODE au lieu de 200."; exit 1; }
+          done
+
+      - name: Referme l'acces SSH
+        # Toujours executee : la liste blanche est limitee a 5 entrees, on n'y
+        # laisse pas s'accumuler des IP de runners disparus.
+        if: always() && steps.whitelist.outputs.ajoutee == 'true'
+        run: |
+          REPONSE="$(curl -sS -m 45 \
+            -H "Authorization: cpanel ${{ secrets.CPANEL_USERNAME }}:${{ secrets.CPANEL_API_TOKEN }}" \
+            "https://${{ secrets.CPANEL_SERVER }}:2083/execute/SshWhitelist/remove?address=${{ steps.ip.outputs.ipv4 }}&port=22&direction=in")"
+          echo "Reponse API : $REPONSE"
+          # Verifiee et non seulement affichee : une suppression qui echoue en
+          # silence remplit la liste jusqu'au blocage complet. C'est ce qui avait
+          # fait echouer le premier deploiement du portfolio.
+          echo "$REPONSE" | jq -e '.status == 1' > /dev/null \
+            || echo "::warning::La suppression de l'IP du runner a echoue. Le prochain deploiement videra la liste, mais verifiez cPanel si le probleme persiste."
+
+      - name: Efface la cle SSH
+        if: always()
+        run: rm -rf ~/.ssh/id_deploy ~/.ssh/config
