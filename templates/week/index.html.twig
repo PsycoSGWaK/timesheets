@@ -20,6 +20,9 @@
     tr.attention { background: var(--warn-bg); }
     .badge { font-size: .8rem; color: var(--warn); font-weight: 600; }
     .muted { color: var(--muted); }
+    .projection { margin: 1.25rem 0; padding: .9rem 1.1rem; border: 1px solid var(--border);
+        border-radius: 10px; background: #fbfbfe; }
+    .projection strong { color: var(--accent); }
 </style>
 {% endblock %}
 
@@ -36,6 +39,23 @@
         <div>Travaillé<strong>{{ workWeek.weekFact.workedMinutes.value|duree }}</strong></div>
         <div>RTT acquis<strong>{{ workWeek.weekFact.rttAcquired.value|duree }}</strong></div>
         <div>Heures sup.<strong>{{ workWeek.weekFact.overtimeMinutes.value|duree }}</strong></div>
+    </div>
+
+    <div class="projection">
+        {% if projection.objectiveReached %}
+            Objectif de {{ projection.objective.value|duree }} atteint.
+            {% if projection.overtimeSoFar.value > 0 %}
+                <strong>{{ projection.overtimeSoFar.value|duree }}</strong> en heures supplémentaires.
+            {% endif %}
+        {% elseif projection.remainingWorkingDays > 0 %}
+            Il reste <strong>{{ projection.remainingToObjective.value|duree }}</strong>
+            avant {{ projection.objective.value|duree }},
+            soit <strong>{{ projection.targetPerRemainingDay.value|duree }}</strong> par jour
+            sur {{ projection.remainingWorkingDays }} jour(s) restant(s).
+        {% else %}
+            Il manque <strong>{{ projection.remainingToObjective.value|duree }}</strong>
+            pour atteindre {{ projection.objective.value|duree }}, sans jour ouvré restant cette semaine.
+        {% endif %}
     </div>
 
     <table>

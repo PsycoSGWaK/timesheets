@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Domain\Projection\WeekProjectionCalculator;
 use App\Domain\Work\WorkWeekAssembler;
 use App\Repository\EmployerReadingRepository;
 use App\Repository\PunchEventRepository;
@@ -21,6 +22,7 @@ final class WeekController extends AbstractController
         private readonly PunchEventRepository $punches,
         private readonly EmployerReadingRepository $readings,
         private readonly WorkWeekAssembler $assembler,
+        private readonly WeekProjectionCalculator $projectionCalculator,
     ) {
     }
 
@@ -47,11 +49,18 @@ final class WeekController extends AbstractController
             $dates[] = $monday->modify(sprintf('+%d days', $offset));
         }
 
+        $today = new \DateTimeImmutable('today');
+
         $workWeek = $this->assembler->assemble(
             $dates,
             $this->punches->findByDates($dates),
             $this->readings->latestMinutesByDates($dates),
-            new \DateTimeImmutable('today'),
+            $today,
+        );
+
+        $projection = $this->projectionCalculator->project(
+            $workWeek->weekFact()->workedMinutes(),
+            $this->countRemainingWorkingDays($dates, $today),
         );
 
         $previous = $monday->modify('-7 days');
@@ -59,6 +68,7 @@ final class WeekController extends AbstractController
 
         return $this->render('week/index.html.twig', [
             'workWeek' => $workWeek,
+            'projection' => $projection,
             'week' => $week,
             'monday' => $monday,
             'sunday' => $monday->modify('+6 days'),
@@ -66,4 +76,23 @@ final class WeekController extends AbstractController
             'next' => ['year' => (int) $next->format('o'), 'week' => (int) $next->format('W')],
         ]);
     }
+
+    /**
+     * Jours ouvrés (lun-ven) de la semaine encore à venir, aujourd'hui inclus : ceux
+     * sur lesquels la répartition du temps restant a du sens.
+     *
+     * @param list<\DateTimeImmutable> $dates
+     */
+    private function countRemainingWorkingDays(array $dates, \DateTimeImmutable $today): int
+    {
+        $count = 0;
+        foreach ($dates as $date) {
+            if ((int) $date->format('N') <= 5 && $date >= $today) {
+                ++$count;
+            }
+        }
+
+        return $count;
+    }
 }
+
