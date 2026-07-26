@@ -1,0 +1,53 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controller;
+
+use App\Domain\Projection\LeaveTimeCalculator;
+use App\Domain\Time\Minutes;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
+
+/**
+ * Le mode prévisionnel du quotidien : « à quelle heure puis-je partir ? » (spec §4.6).
+ *
+ * On saisit les trois horaires connus de la matinée (prise de poste, départ et retour
+ * de pause) et l'outil rend l'heure de sortie visant l'objectif, pénalité de pause
+ * comprise — la correction qu'aucun calcul mental ne fait spontanément.
+ */
+final class ProjectionController extends AbstractController
+{
+    #[Route('/quand-partir', name: 'projection', methods: ['GET', 'POST'])]
+    public function projection(Request $request, LeaveTimeCalculator $calculator): Response
+    {
+        $morningStart = (string) $request->request->get('morning_start', '');
+        $lunchDeparture = (string) $request->request->get('lunch_departure', '');
+        $lunchReturn = (string) $request->request->get('lunch_return', '');
+
+        $estimate = null;
+        $error = null;
+
+        if ($request->isMethod('POST')) {
+            try {
+                $estimate = $calculator->estimate(
+                    Minutes::fromClock($morningStart),
+                    Minutes::fromClock($lunchDeparture),
+                    Minutes::fromClock($lunchReturn),
+                );
+            } catch (\InvalidArgumentException $exception) {
+                $error = $exception->getMessage();
+            }
+        }
+
+        return $this->render('projection/index.html.twig', [
+            'morningStart' => $morningStart,
+            'lunchDeparture' => $lunchDeparture,
+            'lunchReturn' => $lunchReturn,
+            'estimate' => $estimate,
+            'error' => $error,
+        ]);
+    }
+}

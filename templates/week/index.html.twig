@@ -1,0 +1,102 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Semaine {{ week }} — {{ monday|date('d/m/Y') }}{% endblock %}
+
+{% block stylesheets %}
+<style>
+    :root { --border: #d0d0d7; --muted: #6b6b76; --accent: #2f5fdc; --warn-bg: #fdf3e3; --warn: #8a5a00; }
+    body { font-family: system-ui, sans-serif; color: #1a1a1f; margin: 0; background: #fff; }
+    main { max-width: 900px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+    a { color: var(--accent); }
+    .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    h1 { font-size: 1.35rem; margin: 0; }
+    .totals { display: flex; gap: 1.5rem; margin: 1rem 0; padding: .75rem 1rem; background: #f6f6f9; border-radius: 8px; }
+    .totals div { font-size: .9rem; color: var(--muted); }
+    .totals strong { display: block; font-size: 1.1rem; color: #1a1a1f; }
+    table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+    th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    tr.attention { background: var(--warn-bg); }
+    .badge { font-size: .8rem; color: var(--warn); font-weight: 600; }
+    .muted { color: var(--muted); }
+    .projection { margin: 1.25rem 0; padding: .9rem 1.1rem; border: 1px solid var(--border);
+        border-radius: 10px; background: #fbfbfe; }
+    .projection strong { color: var(--accent); }
+</style>
+{% endblock %}
+
+{% block body %}
+{% set jours = {'1': 'Lun', '2': 'Mar', '3': 'Mer', '4': 'Jeu', '5': 'Ven', '6': 'Sam', '7': 'Dim'} %}
+<main>
+    <div class="nav">
+        <a href="{{ path('week', {year: previous.year, week: previous.week}) }}">← Semaine {{ previous.week }}</a>
+        <h1>Semaine {{ week }} — du {{ monday|date('d/m') }} au {{ sunday|date('d/m/Y') }}</h1>
+        <a href="{{ path('week', {year: next.year, week: next.week}) }}">Semaine {{ next.week }} →</a>
+    </div>
+
+    <div class="totals">
+        <div>Travaillé<strong>{{ workWeek.weekFact.workedMinutes.value|duree }}</strong></div>
+        <div>RTT acquis<strong>{{ workWeek.weekFact.rttAcquired.value|duree }}</strong></div>
+        <div>Heures sup.<strong>{{ workWeek.weekFact.overtimeMinutes.value|duree }}</strong></div>
+    </div>
+
+    <div class="projection">
+        {% if projection.objectiveReached %}
+            Objectif de {{ projection.objective.value|duree }} atteint.
+            {% if projection.overtimeSoFar.value > 0 %}
+                <strong>{{ projection.overtimeSoFar.value|duree }}</strong> en heures supplémentaires.
+            {% endif %}
+        {% elseif projection.remainingWorkingDays > 0 %}
+            Il reste <strong>{{ projection.remainingToObjective.value|duree }}</strong>
+            avant {{ projection.objective.value|duree }},
+            soit <strong>{{ projection.targetPerRemainingDay.value|duree }}</strong> par jour
+            sur {{ projection.remainingWorkingDays }} jour(s) restant(s).
+        {% else %}
+            Il manque <strong>{{ projection.remainingToObjective.value|duree }}</strong>
+            pour atteindre {{ projection.objective.value|duree }}, sans jour ouvré restant cette semaine.
+        {% endif %}
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Jour</th>
+                <th class="num">Nous</th>
+                <th class="num">ADP</th>
+                <th class="num">Écart</th>
+                <th>Rapprochement</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for day in workWeek.days %}
+                {% set reco = day.reconciliation %}
+                <tr class="{{ reco.needsAttention ? 'attention' : '' }}">
+                    <td>{{ jours[day.date|date('N')] }} {{ day.date|date('d/m') }}</td>
+                    <td class="num">{{ day.dayFact.workedMinutes.value|duree }}</td>
+                    <td class="num">
+                        {%- if day.employerReading is not null -%}
+                            {{ day.employerReading.value|duree }}
+                        {%- else -%}
+                            <span class="muted">—</span>
+                        {%- endif -%}
+                    </td>
+                    <td class="num">
+                        {%- if reco.delta is not null -%}
+                            {{ reco.delta.value|duree }}
+                        {%- else -%}
+                            <span class="muted">—</span>
+                        {%- endif -%}
+                    </td>
+                    <td>
+                        {{ reco.status.label }}
+                        {% if reco.needsAttention %}<span class="badge">⚠</span>{% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p style="margin-top:2rem"><a href="{{ path('import') }}">← Coller un nouveau pointage</a></p>
+</main>
+{% endblock %}

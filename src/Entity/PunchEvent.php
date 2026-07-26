@@ -7,6 +7,7 @@ namespace App\Entity;
 use App\Domain\Punch\PunchNature;
 use App\Domain\Punch\PunchOrigin;
 use App\Domain\Time\Minutes;
+use App\Repository\PunchEventRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -23,7 +24,7 @@ use Doctrine\ORM\Mapping as ORM;
  * L'unicité de `(date, time, rang)` garantit un import idempotent : recoller la même
  * semaine ne duplique aucun pointage (source-adp.md §5.3).
  */
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: PunchEventRepository::class)]
 #[ORM\Table(name: 'punch_event')]
 #[ORM\UniqueConstraint(name: 'uniq_punch_slot', columns: ['date', 'time', 'rang'])]
 final class PunchEvent

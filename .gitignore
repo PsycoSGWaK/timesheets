@@ -22,3 +22,6 @@ phpstan.neon
 /phpunit.xml
 /.phpunit.cache/
 ###< phpunit/phpunit ###
+
+# Config locale Claude Code
+/.claude/settings.local.json
