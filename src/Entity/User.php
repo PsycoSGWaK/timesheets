@@ -17,7 +17,7 @@ use Symfony\Component\Security\Core\User\UserInterface;
  * Pas d'inscription publique : les comptes se créent via la commande console
  * `app:user:create`, pas par un formulaire ouvert sur l'appli.
  */
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'app_user')]
 #[ORM\UniqueConstraint(name: 'uniq_user_email', columns: ['email'])]
 final class User implements UserInterface, PasswordAuthenticatedUserInterface

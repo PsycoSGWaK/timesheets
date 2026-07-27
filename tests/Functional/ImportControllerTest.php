@@ -14,6 +14,8 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 final class ImportControllerTest extends WebTestCase
 {
+    use LogsInAUser;
+
     private KernelBrowser $client;
     private EntityManagerInterface $entityManager;
 
@@ -28,6 +30,7 @@ final class ImportControllerTest extends WebTestCase
         $this->entityManager = $entityManager;
 
         $this->resetSchema();
+        $this->logIn($this->client, $this->entityManager);
     }
 
     #[Test]

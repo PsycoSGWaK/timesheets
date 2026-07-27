@@ -12,6 +12,8 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 final class WeekControllerTest extends WebTestCase
 {
+    use LogsInAUser;
+
     private KernelBrowser $client;
     private EntityManagerInterface $entityManager;
 
@@ -26,6 +28,7 @@ final class WeekControllerTest extends WebTestCase
         $this->entityManager = $entityManager;
 
         $this->resetSchema();
+        $this->logIn($this->client, $this->entityManager);
     }
 
     #[Test]

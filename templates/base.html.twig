@@ -124,12 +124,15 @@
         {% endif %}
     </head>
     <body>
+        {% if app.user %}
         <nav class="app-nav">
             <a class="app-nav__brand" href="{{ path('week_current') }}">Timesheets</a>
             <a href="{{ path('import') }}"{% if app.request.attributes.get('_route') == 'import' %} aria-current="page"{% endif %}>Coller un pointage</a>
             <a href="{{ path('week_current') }}"{% if app.request.attributes.get('_route') starts with 'week' %} aria-current="page"{% endif %}>Ma semaine</a>
             <a href="{{ path('projection') }}"{% if app.request.attributes.get('_route') == 'projection' %} aria-current="page"{% endif %}>Quand partir ?</a>
+            <a href="{{ path('logout') }}">Déconnexion</a>
         </nav>
+        {% endif %}
         {% block body %}{% endblock %}
     </body>
 </html>
