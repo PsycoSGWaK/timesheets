@@ -6,6 +6,7 @@ namespace App\Domain\Week;
 
 use App\Domain\Day\DayFact;
 use App\Domain\Time\Minutes;
+use App\Entity\Settings;
 
 /**
  * Agrège les journées d'une même semaine ISO et applique la règle d'acquisition
@@ -15,16 +16,13 @@ use App\Domain\Time\Minutes;
  *   - 35 h → 37 h       : le surplus alimente le compteur RTT, plafonné à 2 h ;
  *   - > 37 h            : 2 h en RTT, et tout ce qui dépasse 37 h devient des heures sup.
  *
- * Les seuils sont ceux du paramétrage 2025 ; ils rejoindront l'entité de paramétrage
- * le moment venu, comme ceux du calcul journalier.
+ * Les seuils hebdomadaires (35h, 37h) se déduisent des journées de référence du
+ * paramétrage de l'utilisateur ({@see Settings::weeklyReference()},
+ * {@see Settings::weeklyBascule()}) ; le plafond RTT en vient directement.
  */
 final class WeeklyCalculator
 {
-    private const SEUIL_REFERENCE = 35 * 60; // 35 h
-    private const SEUIL_BASCULE = 37 * 60;   // 37 h
-    private const RTT_MAX = 2 * 60;          // 2 h
-
-    public function aggregate(DayFact ...$days): WeekFact
+    public function aggregate(Settings $settings, DayFact ...$days): WeekFact
     {
         [$isoYear, $isoWeek] = $this->resolveIsoWeek(...$days);
 
@@ -33,9 +31,9 @@ final class WeeklyCalculator
             $worked += $day->workedMinutes()->value();
         }
 
-        $aboveReference = max(0, $worked - self::SEUIL_REFERENCE);
-        $rtt = min($aboveReference, self::RTT_MAX);
-        $overtime = max(0, $worked - self::SEUIL_BASCULE);
+        $aboveReference = max(0, $worked - $settings->weeklyReference()->value());
+        $rtt = min($aboveReference, $settings->rttMax()->value());
+        $overtime = max(0, $worked - $settings->weeklyBascule()->value());
 
         return new WeekFact(
             $isoYear,

@@ -9,6 +9,7 @@ use App\Domain\Day\DailyCalculator;
 use App\Domain\Day\DayFact;
 use App\Domain\Time\Minutes;
 use App\Entity\PunchEvent;
+use App\Entity\Settings;
 use App\Entity\User;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -18,10 +19,12 @@ final class DailyCalculatorTest extends TestCase
     private const DAY = '2026-07-23';
 
     private User $user;
+    private Settings $settings;
 
     protected function setUp(): void
     {
         $this->user = User::register('guillaume@example.com', 'hashed-password');
+        $this->settings = Settings::defaults($this->user);
     }
 
     #[Test]
@@ -135,6 +138,7 @@ final class DailyCalculatorTest extends TestCase
 
         $shuffled = (new DailyCalculator())->calculate(
             new \DateTimeImmutable(self::DAY),
+            $this->settings,
             $this->punch('13:00', 3),
             $this->punch('08:30', 1),
             $this->punch('16:42', 4),
@@ -150,9 +154,37 @@ final class DailyCalculatorTest extends TestCase
     {
         $fact = (new DailyCalculator())->calculate(
             new \DateTimeImmutable(self::DAY.' 08:30:00'),
+            $this->settings,
         );
 
         self::assertSame('00:00:00', $fact->date()->format('H:i:s'));
+    }
+
+    #[Test]
+    public function custom_settings_change_the_break_threshold_applied(): void
+    {
+        // Pause minimale ramenée à 20 min : une pause de 26 min ne coûte plus rien.
+        $custom = Settings::defaults($this->user);
+        $custom->update(
+            pauseMinimale: 20,
+            fenetreDebut: $this->settings->fenetreDebut()->value(),
+            fenetreFin: $this->settings->fenetreFin()->value(),
+            journeeReferenceContractuelle: $this->settings->journeeReferenceContractuelle()->value(),
+            journeeReferenceEffective: $this->settings->journeeReferenceEffective()->value(),
+            rttMax: $this->settings->rttMax()->value(),
+        );
+
+        $fact = (new DailyCalculator())->calculate(
+            new \DateTimeImmutable(self::DAY),
+            $custom,
+            $this->punch('08:30', 1),
+            $this->punch('12:00', 2),
+            $this->punch('12:26', 3),
+            $this->punch('16:00', 4),
+        );
+
+        self::assertSame(0, $fact->breakPenalty()->value());
+        self::assertFalse($fact->hasAnomaly(DailyAnomaly::PauseTropCourte));
     }
 
     /**
@@ -165,7 +197,7 @@ final class DailyCalculatorTest extends TestCase
             $punches[] = $this->punch($clock, $index + 1);
         }
 
-        return (new DailyCalculator())->calculate(new \DateTimeImmutable(self::DAY), ...$punches);
+        return (new DailyCalculator())->calculate(new \DateTimeImmutable(self::DAY), $this->settings, ...$punches);
     }
 
     private function punch(string $clock, int $rang): PunchEvent

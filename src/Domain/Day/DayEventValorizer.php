@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Day;
 
 use App\Entity\DayEvent;
+use App\Entity\Settings;
 
 /**
  * Valorise une journée par son événement quand aucun pointage ne l'a fait — cas
@@ -22,13 +23,13 @@ use App\Entity\DayEvent;
  */
 final class DayEventValorizer
 {
-    public function valorize(DayFact $fact, int $punchCount, ?DayEvent $event): DayFact
+    public function valorize(DayFact $fact, int $punchCount, ?DayEvent $event, Settings $settings): DayFact
     {
         if ($punchCount > 0 || null === $event) {
             return $fact;
         }
 
-        $valorized = $event->portion()->of($event->code()->referenceDay());
+        $valorized = $event->portion()->of($event->code()->referenceDay($settings));
 
         return new DayFact(
             $fact->date(),

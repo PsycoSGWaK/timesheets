@@ -1,0 +1,69 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Paramétrage{% endblock %}
+
+{% block stylesheets %}
+<style>
+    main { max-width: 480px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+    h1 { font-size: 1.4rem; margin-bottom: .3rem; }
+    .subtitle { color: var(--text-secondary); font-size: .9rem; margin-bottom: 1.5rem; }
+    label { display: block; font-weight: 600; margin: .9rem 0 .3rem; color: var(--text-primary); }
+    .field-hint { font-size: .8rem; color: var(--text-muted); font-weight: 400; }
+    input[type=time] {
+        width: 100%; box-sizing: border-box;
+        background: var(--surface-card); color: var(--text-primary);
+        border: 1px solid var(--gridline); border-radius: 8px;
+        padding: .5rem .6rem; font: inherit; font-size: 1rem;
+        font-variant-numeric: tabular-nums;
+    }
+    input[type=time]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    button {
+        margin-top: 1.2rem; padding: .6rem 1.2rem; border: 0; border-radius: 8px;
+        background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 600; cursor: pointer;
+    }
+    button:hover { filter: brightness(1.08); }
+    .error, .success {
+        padding: .75rem 1rem; border-radius: 8px; font-weight: 600; margin-bottom: 1rem;
+    }
+    .error { background: var(--status-critical-bg); color: var(--status-critical); }
+    .success { background: var(--status-good-bg); color: var(--status-good); }
+</style>
+{% endblock %}
+
+{% block body %}
+<main>
+    <h1>Paramétrage</h1>
+    <p class="subtitle">Les seuils utilisés par les calculs de l'application (spec §3).</p>
+
+    {% for message in app.flashes('success') %}
+        <p class="success">{{ message }}</p>
+    {% endfor %}
+    {% if error %}
+        <p class="error">Valeur illisible : {{ error }}</p>
+    {% endif %}
+
+    <form method="post" action="{{ path('settings_save') }}">
+        <label for="pause_minimale">Pause déjeuner minimale <span class="field-hint">(en dessous, la différence est décomptée)</span></label>
+        <input type="time" id="pause_minimale" name="pause_minimale" value="{{ values.pause_minimale }}" required>
+
+        <label for="fenetre_debut">Début de la fenêtre de pause autorisée</label>
+        <input type="time" id="fenetre_debut" name="fenetre_debut" value="{{ values.fenetre_debut }}" required>
+
+        <label for="fenetre_fin">Fin de la fenêtre de pause autorisée</label>
+        <input type="time" id="fenetre_fin" name="fenetre_fin" value="{{ values.fenetre_fin }}" required>
+
+        <label for="journee_reference_contractuelle">Journée contractuelle <span class="field-hint">(congés, RTT posé, jours fériés)</span></label>
+        <input type="time" id="journee_reference_contractuelle" name="journee_reference_contractuelle" value="{{ values.journee_reference_contractuelle }}" required>
+
+        <label for="journee_reference_effective">Journée effective <span class="field-hint">(travail réel, télétravail — fixe aussi le seuil hebdomadaire des heures sup, x5)</span></label>
+        <input type="time" id="journee_reference_effective" name="journee_reference_effective" value="{{ values.journee_reference_effective }}" required>
+
+        <label for="rtt_max">RTT acquis au maximum par semaine</label>
+        <input type="time" id="rtt_max" name="rtt_max" value="{{ values.rtt_max }}" required>
+
+        <button type="submit">Enregistrer</button>
+    </form>
+
+    <p style="margin-top:2rem"><a href="{{ path('week_current') }}">← Voir ma semaine</a></p>
+</main>
+{% endblock %}

@@ -23,7 +23,7 @@
                 --text-muted: #898781;
                 --gridline: #e1e0d9;
                 --border: rgba(11, 11, 11, 0.10);
-                --accent: #2a78d6;
+                --accent: #b00d23;
                 --accent-ink: #ffffff;
                 --status-good: #0ca30c;
                 --status-good-bg: #e8f6e8;
@@ -45,7 +45,7 @@
                     --text-muted: #898781;
                     --gridline: #2c2c2a;
                     --border: rgba(255, 255, 255, 0.10);
-                    --accent: #3987e5;
+                    --accent: #e8495f;
                     --accent-ink: #0b0b0b;
                     --status-good: #0ca30c;
                     --status-good-bg: #0f2410;
@@ -67,7 +67,7 @@
                 --text-muted: #898781;
                 --gridline: #2c2c2a;
                 --border: rgba(255, 255, 255, 0.10);
-                --accent: #3987e5;
+                --accent: #e8495f;
                 --accent-ink: #0b0b0b;
                 --status-good: #0ca30c;
                 --status-good-bg: #0f2410;
@@ -163,6 +163,8 @@
             <a href="{{ path('import') }}"{% if app.request.attributes.get('_route') == 'import' %} aria-current="page"{% endif %}>Coller un pointage</a>
             <a href="{{ path('week_current') }}"{% if app.request.attributes.get('_route') starts with 'week' %} aria-current="page"{% endif %}>Ma semaine</a>
             <a href="{{ path('projection') }}"{% if app.request.attributes.get('_route') == 'projection' %} aria-current="page"{% endif %}>Quand partir ?</a>
+            <a href="{{ path('balances') }}"{% if app.request.attributes.get('_route') starts with 'balance' %} aria-current="page"{% endif %}>Compteurs</a>
+            <a href="{{ path('settings') }}"{% if app.request.attributes.get('_route') starts with 'settings' %} aria-current="page"{% endif %}>Paramétrage</a>
             <a href="{{ path('logout') }}">Déconnexion</a>
             <button type="button" class="theme-toggle" data-controller="theme" data-action="theme#toggle" aria-label="Changer de thème">
                 <svg class="theme-toggle__icon theme-toggle__icon--sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
