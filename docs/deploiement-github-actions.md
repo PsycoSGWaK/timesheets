@@ -39,18 +39,18 @@ erreur de configuration du transfert.
 ### 1. Préparer le serveur
 
 Le montage cible est décrit dans [deploiement.md](deploiement.md) : dépôt hors de
-portée du web, seul `public/` exposé par lien symbolique.
+portée du web, seul `public/` exposé — **en Document Root direct, pas par lien
+symbolique** (voir l'encadré de ce document pour le pourquoi, découvert lors du premier
+déploiement).
 
 ```bash
 ssh nayo1552@cornufer.o2switch.net
 git clone git@github.com:PsycoSGWaK/timesheets.git ~/repositories/timesheets
-mkdir -p ~/public_html/timesheets
-ln -s ~/repositories/timesheets/public ~/public_html/timesheets/public
+chmod 755 ~/repositories/timesheets
 ```
 
-> ⚠️ Si cPanel a créé `~/public_html/timesheets/public` comme un **vrai dossier** lors de
-> la création du sous-domaine, il doit être retiré avant de poser le lien — après
-> vérification de son contenu, jamais à l'aveugle.
+Dans cPanel → **Domaines**, ouvrir `timesheets.idevnormandie.fr` et régler le champ
+**Document Root** sur `/home/nayo1552/repositories/timesheets/public`.
 
 Le serveur doit pouvoir faire `git fetch` depuis GitHub (clé de déploiement ou dépôt public).
 
