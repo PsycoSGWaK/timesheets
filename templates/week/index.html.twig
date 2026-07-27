@@ -89,6 +89,30 @@
         font: inherit; font-size: .82rem; padding: .2rem .5rem; cursor: pointer;
     }
     .event-form button:hover { color: var(--text-primary); border-color: var(--accent); }
+
+    .error { background: var(--status-critical-bg); color: var(--status-critical);
+        padding: .75rem 1rem; border-radius: 8px; font-weight: 600; margin-bottom: 1rem; }
+    .stat-tile__action { margin-top: .5rem; }
+    .stat-tile__action button {
+        border: 1px solid var(--gridline); border-radius: 6px; background: var(--surface-1);
+        color: var(--text-secondary); font: inherit; font-size: .78rem; padding: .2rem .5rem; cursor: pointer;
+    }
+    .stat-tile__action button:hover { color: var(--text-primary); border-color: var(--accent); }
+    .overtime-form {
+        margin: -.5rem 0 1.5rem; padding: .9rem 1.1rem; border: 1px solid var(--gridline);
+        border-radius: 10px; background: var(--surface-card); font-size: .9rem;
+    }
+    .overtime-form .fields { display: flex; gap: .6rem; flex-wrap: wrap; margin: .6rem 0; }
+    .overtime-form label { display: block; font-size: .78rem; color: var(--text-secondary); margin-bottom: .2rem; }
+    .overtime-form input[type=time], .overtime-form input[type=text] {
+        background: var(--surface-1); color: var(--text-primary);
+        border: 1px solid var(--gridline); border-radius: 6px; padding: .3rem .4rem; font: inherit;
+    }
+    .overtime-form input[type=text] { width: 100%; box-sizing: border-box; margin-top: .4rem; }
+    .overtime-form button {
+        margin-top: .6rem; border: 0; border-radius: 6px; background: var(--accent);
+        color: var(--accent-ink); font: inherit; font-weight: 600; padding: .35rem .8rem; cursor: pointer;
+    }
 </style>
 {% endblock %}
 
@@ -102,6 +126,10 @@
     'no_reading': 'muted',
 } %}
 <main>
+    {% for message in app.flashes('error') %}
+        <p class="error">{{ message }}</p>
+    {% endfor %}
+
     <div class="nav">
         <a href="{{ path('week', {year: previous.year, week: previous.week}) }}">← Semaine {{ previous.week }}</a>
         <div>
@@ -122,12 +150,42 @@
         <div class="stat-tile">
             <span class="stat-tile__label">RTT acquis</span>
             <span class="stat-tile__value">{{ workWeek.weekFact.rttAcquired.value|duree }}</span>
+            {% if workWeek.weekFact.rttAcquired.value > 0 %}
+                <form class="stat-tile__action" method="post" action="{{ path('balance_credit_rtt', {year: monday|date('o'), week: week}) }}">
+                    <button type="submit">Créditer ce RTT</button>
+                </form>
+            {% endif %}
         </div>
         <div class="stat-tile{{ workWeek.weekFact.overtimeMinutes.value > 0 ? ' stat-tile--overtime' : '' }}">
             <span class="stat-tile__label">Heures sup.</span>
             <span class="stat-tile__value">{{ workWeek.weekFact.overtimeMinutes.value|duree }}</span>
         </div>
     </div>
+
+    {% if workWeek.weekFact.overtimeMinutes.value > 0 %}
+        <div class="overtime-form">
+            <strong>Répartir les heures supplémentaires</strong>
+            <form method="post" action="{{ path('balance_allocate_overtime', {year: monday|date('o'), week: week}) }}">
+                <div class="fields">
+                    <div>
+                        <label for="recuperation">Récupération</label>
+                        <input type="time" id="recuperation" name="recuperation" value="00:00">
+                    </div>
+                    <div>
+                        <label for="variable">Variable</label>
+                        <input type="time" id="variable" name="variable" value="00:00">
+                    </div>
+                    <div>
+                        <label for="paiement">Paiement</label>
+                        <input type="time" id="paiement" name="paiement" value="00:00">
+                    </div>
+                </div>
+                <label for="motif">Motif</label>
+                <input type="text" id="motif" name="motif" placeholder="Facultatif">
+                <div><button type="submit">Répartir</button></div>
+            </form>
+        </div>
+    {% endif %}
 
     <div class="projection">
         {% if projection.objectiveReached %}

@@ -163,6 +163,7 @@
             <a href="{{ path('import') }}"{% if app.request.attributes.get('_route') == 'import' %} aria-current="page"{% endif %}>Coller un pointage</a>
             <a href="{{ path('week_current') }}"{% if app.request.attributes.get('_route') starts with 'week' %} aria-current="page"{% endif %}>Ma semaine</a>
             <a href="{{ path('projection') }}"{% if app.request.attributes.get('_route') == 'projection' %} aria-current="page"{% endif %}>Quand partir ?</a>
+            <a href="{{ path('balances') }}"{% if app.request.attributes.get('_route') starts with 'balance' %} aria-current="page"{% endif %}>Compteurs</a>
             <a href="{{ path('settings') }}"{% if app.request.attributes.get('_route') starts with 'settings' %} aria-current="page"{% endif %}>Paramétrage</a>
             <a href="{{ path('logout') }}">Déconnexion</a>
             <button type="button" class="theme-toggle" data-controller="theme" data-action="theme#toggle" aria-label="Changer de thème">

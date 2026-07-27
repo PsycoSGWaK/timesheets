@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Compteurs{% endblock %}
+
+{% block stylesheets %}
+<style>
+    main { max-width: 480px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+    h1 { font-size: 1.4rem; margin-bottom: .3rem; }
+    .subtitle { color: var(--text-secondary); font-size: .9rem; margin-bottom: 1.5rem; }
+    table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+    th, td { text-align: left; padding: .6rem .6rem; border-bottom: 1px solid var(--gridline); }
+    th { color: var(--text-muted); font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .02em; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+    .back-link { display: inline-block; margin-top: 2rem; font-weight: 600; text-decoration: none; }
+</style>
+{% endblock %}
+
+{% block body %}
+<main>
+    <h1>Compteurs</h1>
+    <p class="subtitle">Le solde de chaque compteur, recalculé depuis l'historique des mouvements.</p>
+
+    <table>
+        <thead>
+            <tr><th>Compteur</th><th class="num">Solde</th></tr>
+        </thead>
+        <tbody>
+            {% for balance in balances %}
+                <tr>
+                    <td>{{ balance.counter.label }}</td>
+                    <td class="num">{{ balance.amount.value|duree }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <a class="back-link" href="{{ path('week_current') }}">← Voir ma semaine</a>
+</main>
+{% endblock %}

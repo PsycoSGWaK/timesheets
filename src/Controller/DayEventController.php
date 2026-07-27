@@ -4,13 +4,19 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Domain\Balance\BalanceCounter;
 use App\Domain\Day\DayEventCode;
 use App\Domain\Day\DayPortion;
+use App\Domain\Time\Minutes;
+use App\Entity\BalanceMovement;
 use App\Entity\DayEvent;
 use App\Entity\User;
+use App\Repository\BalanceMovementRepository;
 use App\Repository\DayEventRepository;
+use App\Repository\SettingsRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -20,12 +26,19 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
  * Déclare ou retire l'événement d'un jour (CP, CA, RTT, JF, TT — spec §2), depuis
  * l'écran « Ma semaine ». Un seul événement par jour : en déclarer un nouveau
  * remplace le précédent plutôt que d'échouer sur la contrainte d'unicité.
+ *
+ * Poser un jour RTT débite le compteur RTT (spec §4.3 : « se pose en jours »). Retirer
+ * ou remplacer un jour RTT annule ce débit par un mouvement compensateur — jamais de
+ * suppression, le ledger reste append-only ({@see BalanceMovement}).
  */
 final class DayEventController extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly DayEventRepository $events,
+        private readonly BalanceMovementRepository $balances,
+        private readonly SettingsRepository $settingsRepository,
+        private readonly ClockInterface $clock,
     ) {
     }
 
@@ -38,6 +51,8 @@ final class DayEventController extends AbstractController
 
         $existing = $this->events->findOneByDate($user, $date);
         if (null !== $existing) {
+            $this->reverseRttDebit($user, $existing, $date);
+
             // Flush separe : au sein d'un meme flush, Doctrine insere avant de
             // supprimer, ce qui violerait la contrainte d'unicite (user, date)
             // tant que l'ancien evenement n'est pas encore efface.
@@ -46,6 +61,19 @@ final class DayEventController extends AbstractController
         }
 
         $this->entityManager->persist(DayEvent::declare($user, $date, $code, $portion));
+
+        if (DayEventCode::Rtt === $code) {
+            $settings = $this->settingsRepository->forUser($user);
+            $this->entityManager->persist(BalanceMovement::debit(
+                $user,
+                BalanceCounter::Rtt,
+                $portion->of($settings->journeeReferenceContractuelle()),
+                $date,
+                $this->clock->now(),
+                'Jour RTT posé',
+            ));
+        }
+
         $this->entityManager->flush();
 
         return $this->redirectToWeekOf($date);
@@ -58,11 +86,36 @@ final class DayEventController extends AbstractController
 
         $existing = $this->events->findOneByDate($user, $date);
         if (null !== $existing) {
+            $this->reverseRttDebit($user, $existing, $date);
             $this->entityManager->remove($existing);
             $this->entityManager->flush();
         }
 
         return $this->redirectToWeekOf($date);
+    }
+
+    /**
+     * Annule le débit RTT d'un événement retiré ou remplacé, s'il en portait un —
+     * par un crédit compensateur du même montant, jamais par une suppression.
+     */
+    private function reverseRttDebit(User $user, DayEvent $replaced, \DateTimeImmutable $date): void
+    {
+        if (DayEventCode::Rtt !== $replaced->code()) {
+            return;
+        }
+
+        foreach ($this->balances->findByUserAndDate($user, $date) as $movement) {
+            if (BalanceCounter::Rtt === $movement->counter() && !$movement->isCredit()) {
+                $this->entityManager->persist(BalanceMovement::credit(
+                    $user,
+                    BalanceCounter::Rtt,
+                    Minutes::of(abs($movement->amount()->value())),
+                    $date,
+                    $this->clock->now(),
+                    'Annulation : jour RTT retiré ou remplacé',
+                ));
+            }
+        }
     }
 
     private function redirectToWeekOf(\DateTimeImmutable $date): Response
