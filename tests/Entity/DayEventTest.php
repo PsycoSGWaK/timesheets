@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Entity;
 
 use App\Domain\Day\DayEventCode;
+use App\Domain\Day\DayHalf;
 use App\Domain\Day\DayPortion;
 use App\Entity\DayEvent;
 use App\Entity\User;
@@ -25,6 +26,7 @@ final class DayEventTest extends TestCase
         self::assertSame('2026-07-24', $event->date()->format('Y-m-d'));
         self::assertSame(DayEventCode::Teletravail, $event->code());
         self::assertSame(DayPortion::Full, $event->portion());
+        self::assertNull($event->half());
     }
 
     #[Test]
@@ -33,6 +35,20 @@ final class DayEventTest extends TestCase
         $event = DayEvent::declare($this->user(), new \DateTimeImmutable('2026-07-24'), DayEventCode::CongePaye, DayPortion::Half);
 
         self::assertSame(DayPortion::Half, $event->portion());
+    }
+
+    #[Test]
+    public function it_accepts_which_half_of_the_day_for_a_teletravail_half_day(): void
+    {
+        $event = DayEvent::declare(
+            $this->user(),
+            new \DateTimeImmutable('2026-07-24'),
+            DayEventCode::Teletravail,
+            DayPortion::Half,
+            DayHalf::ApresMidi,
+        );
+
+        self::assertSame(DayHalf::ApresMidi, $event->half());
     }
 
     #[Test]

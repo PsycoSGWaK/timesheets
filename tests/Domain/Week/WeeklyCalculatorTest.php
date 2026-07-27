@@ -166,6 +166,7 @@ final class WeeklyCalculatorTest extends TestCase
             journeeReferenceContractuelle: 6 * 60 + 30,
             journeeReferenceEffective: 6 * 60 + 50,
             rttMax: 2 * 60,
+            finApresMidiTeletravail: 16 * 60,
         );
 
         // 5 jours à 6h50 = 34h10 : au-dessus du seuil 32h30, sous la bascule 34h10.

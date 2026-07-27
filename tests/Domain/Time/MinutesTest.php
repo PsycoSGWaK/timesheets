@@ -110,6 +110,20 @@ final class MinutesTest extends TestCase
     }
 
     #[Test]
+    public function it_keeps_the_smaller_of_two_values(): void
+    {
+        self::assertSame(420, Minutes::of(420)->min(Minutes::of(444))->value());
+        self::assertSame(420, Minutes::of(444)->min(Minutes::of(420))->value());
+    }
+
+    #[Test]
+    public function it_keeps_the_larger_of_two_values(): void
+    {
+        self::assertSame(444, Minutes::of(420)->max(Minutes::of(444))->value());
+        self::assertSame(444, Minutes::of(444)->max(Minutes::of(420))->value());
+    }
+
+    #[Test]
     public function equality_is_by_value(): void
     {
         self::assertTrue(Minutes::of(444)->equals(Minutes::fromHoursAndMinutes(7, 24)));

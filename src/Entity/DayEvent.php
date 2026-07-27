@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Domain\Day\DayEventCode;
+use App\Domain\Day\DayHalf;
 use App\Domain\Day\DayPortion;
 use App\Repository\DayEventRepository;
 use Doctrine\ORM\Mapping as ORM;
@@ -41,12 +42,19 @@ final class DayEvent
     #[ORM\Column(name: 'quotite', enumType: DayPortion::class)]
     private DayPortion $portion;
 
-    private function __construct(User $user, \DateTimeImmutable $date, DayEventCode $code, DayPortion $portion)
+    // Utile seulement pour un TT en demi-journée (matin/après-midi n'ont pas le
+    // même calcul, {@see \App\Domain\Day\TeletravailHalfDayCalculator}) ; nul pour
+    // tous les autres cas (jour plein, ou demi-journée d'une absence CP/CA/RTT/JF).
+    #[ORM\Column(nullable: true, enumType: DayHalf::class)]
+    private ?DayHalf $half;
+
+    private function __construct(User $user, \DateTimeImmutable $date, DayEventCode $code, DayPortion $portion, ?DayHalf $half)
     {
         $this->user = $user;
         $this->date = $date->setTime(0, 0, 0, 0);
         $this->code = $code;
         $this->portion = $portion;
+        $this->half = $half;
     }
 
     public static function declare(
@@ -54,8 +62,9 @@ final class DayEvent
         \DateTimeImmutable $date,
         DayEventCode $code,
         DayPortion $portion = DayPortion::Full,
+        ?DayHalf $half = null,
     ): self {
-        return new self($user, $date, $code, $portion);
+        return new self($user, $date, $code, $portion, $half);
     }
 
     public function id(): ?int
@@ -81,5 +90,10 @@ final class DayEvent
     public function portion(): DayPortion
     {
         return $this->portion;
+    }
+
+    public function half(): ?DayHalf
+    {
+        return $this->half;
     }
 }

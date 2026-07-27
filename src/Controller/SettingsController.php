@@ -30,6 +30,7 @@ final class SettingsController extends AbstractController
         'journee_reference_contractuelle' => 'journeeReferenceContractuelle',
         'journee_reference_effective' => 'journeeReferenceEffective',
         'rtt_max' => 'rttMax',
+        'fin_apres_midi_teletravail' => 'finApresMidiTeletravail',
     ];
 
     public function __construct(
@@ -71,6 +72,7 @@ final class SettingsController extends AbstractController
                 journeeReferenceContractuelle: $minutes['journee_reference_contractuelle']->value(),
                 journeeReferenceEffective: $minutes['journee_reference_effective']->value(),
                 rttMax: $minutes['rtt_max']->value(),
+                finApresMidiTeletravail: $minutes['fin_apres_midi_teletravail']->value(),
             );
 
             if ($isNew) {
