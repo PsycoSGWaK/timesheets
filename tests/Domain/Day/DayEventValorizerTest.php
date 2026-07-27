@@ -30,10 +30,38 @@ final class DayEventValorizerTest extends TestCase
     }
 
     #[Test]
-    public function a_half_day_congé_is_valued_at_half_the_reference_day(): void
+    public function a_full_day_congé_is_valued_at_the_contractual_reference_day(): void
+    {
+        // CP/CA/RTT/JF suivent la base contractuelle 7h00 (35h/5j), distincte des
+        // 7h24 du TT — confirmé par Guillaume, pas la même référence que le travail réel.
+        $fact = $this->emptyFact();
+        $event = DayEvent::declare($this->user(), $this->date(), DayEventCode::CongePaye, DayPortion::Full);
+
+        $valorized = (new DayEventValorizer())->valorize($fact, 0, $event);
+
+        self::assertSame(420, $valorized->workedMinutes()->value());
+    }
+
+    #[Test]
+    public function a_half_day_congé_is_valued_at_half_the_contractual_reference_day(): void
     {
         $fact = $this->emptyFact();
         $event = DayEvent::declare($this->user(), $this->date(), DayEventCode::CongePaye, DayPortion::Half);
+
+        $valorized = (new DayEventValorizer())->valorize($fact, 0, $event);
+
+        self::assertSame(210, $valorized->workedMinutes()->value());
+    }
+
+    #[Test]
+    public function a_half_day_teletravail_currently_halves_its_own_reference_day(): void
+    {
+        // Comportement provisoire : le TT en demi-journée dépend en réalité d'horaires
+        // réels (matin jusqu'au retour de pause, ou 11h30-16h l'après-midi), pas d'une
+        // simple moitié. Report explicite à une tranche dédiée (choix de Guillaume) ;
+        // en attendant, on garde la moitié de la référence TT (7h24 / 2 = 3h42).
+        $fact = $this->emptyFact();
+        $event = DayEvent::declare($this->user(), $this->date(), DayEventCode::Teletravail, DayPortion::Half);
 
         $valorized = (new DayEventValorizer())->valorize($fact, 0, $event);
 

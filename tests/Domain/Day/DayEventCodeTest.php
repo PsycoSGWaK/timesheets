@@ -35,4 +35,23 @@ final class DayEventCodeTest extends TestCase
             self::assertNotSame('', $code->label());
         }
     }
+
+    #[Test]
+    public function teletravail_uses_the_effective_reference_day(): void
+    {
+        // Le TT est du travail réel : il suit la journée de référence 7h24 (37h/5j),
+        // confirmée par l'horaire théorique d'ADP (source-adp §3.2).
+        self::assertSame(444, DayEventCode::Teletravail->referenceDay()->value());
+    }
+
+    #[Test]
+    public function absences_use_the_contractual_reference_day(): void
+    {
+        // CP/CA/RTT/JF ne sont pas du travail : ils se comptent sur la base
+        // contractuelle 35h/5j, distincte des 37h effectifs (confirmé par Guillaume).
+        self::assertSame(420, DayEventCode::CongePaye->referenceDay()->value());
+        self::assertSame(420, DayEventCode::CongeAnciennete->referenceDay()->value());
+        self::assertSame(420, DayEventCode::Rtt->referenceDay()->value());
+        self::assertSame(420, DayEventCode::JourFerie->referenceDay()->value());
+    }
 }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domain\Day;
 
-use App\Domain\Time\Minutes;
 use App\Entity\DayEvent;
 
 /**
@@ -14,7 +13,9 @@ use App\Entity\DayEvent;
  *
  * Le même traitement s'applique aux congés/jours fériés : le total qu'affiche ADP
  * pour une journée de CP ou de JF est lui aussi crédité, pas nul — ne pas valoriser
- * ces journées produirait de faux écarts « journée perdue » au rapprochement.
+ * ces journées produirait de faux écarts « journée perdue » au rapprochement. La
+ * référence dépend du code ({@see DayEventCode::referenceDay()}) : le TT est du
+ * travail réel (7h24), les absences suivent la base contractuelle (7h00).
  *
  * Un événement ne comble jamais un vrai décompte : il n'agit que sur une journée
  * sans aucun pointage.
@@ -27,7 +28,7 @@ final class DayEventValorizer
             return $fact;
         }
 
-        $valorized = $event->portion()->of(Minutes::fromHoursAndMinutes(7, 24));
+        $valorized = $event->portion()->of($event->code()->referenceDay());
 
         return new DayFact(
             $fact->date(),
