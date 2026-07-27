@@ -11,6 +11,7 @@ use App\Repository\DayEventRepository;
 use App\Repository\EmployerReadingRepository;
 use App\Repository\PunchEventRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -28,13 +29,14 @@ final class WeekController extends AbstractController
         private readonly DayEventRepository $events,
         private readonly WorkWeekAssembler $assembler,
         private readonly WeekProjectionCalculator $projectionCalculator,
+        private readonly ClockInterface $clock,
     ) {
     }
 
     #[Route('/semaine', name: 'week_current', methods: ['GET'])]
     public function currentWeek(#[CurrentUser] User $user): Response
     {
-        $today = new \DateTimeImmutable('today');
+        $today = $this->today();
 
         return $this->renderWeek($user, (int) $today->format('o'), (int) $today->format('W'));
     }
@@ -71,7 +73,7 @@ final class WeekController extends AbstractController
             $dates[] = $monday->modify(sprintf('+%d days', $offset));
         }
 
-        $today = new \DateTimeImmutable('today');
+        $today = $this->today();
 
         $workWeek = $this->assembler->assemble(
             $dates,
@@ -99,6 +101,16 @@ final class WeekController extends AbstractController
             'next' => ['year' => (int) $next->format('o'), 'week' => (int) $next->format('W')],
             'pickerValue' => sprintf('%04d-W%02d', $year, $week),
         ]);
+    }
+
+    /**
+     * « Aujourd'hui » à minuit, selon l'horloge injectée — jamais l'horloge système
+     * directement, pour que la consolidation ADP (§4bis) reste testable de façon
+     * déterministe.
+     */
+    private function today(): \DateTimeImmutable
+    {
+        return $this->clock->now()->setTime(0, 0, 0);
     }
 
     /**
