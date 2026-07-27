@@ -22,6 +22,7 @@ final class SettingsTest extends TestCase
         self::assertSame(7 * 60, $settings->journeeReferenceContractuelle()->value());
         self::assertSame(7 * 60 + 24, $settings->journeeReferenceEffective()->value());
         self::assertSame(2 * 60, $settings->rttMax()->value());
+        self::assertSame(16 * 60, $settings->finApresMidiTeletravail()->value());
     }
 
     #[Test]
@@ -69,6 +70,7 @@ final class SettingsTest extends TestCase
             journeeReferenceContractuelle: 6 * 60 + 30,
             journeeReferenceEffective: 7 * 60,
             rttMax: 3 * 60,
+            finApresMidiTeletravail: 17 * 60,
         );
 
         self::assertSame(20, $settings->pauseMinimale()->value());
@@ -77,6 +79,7 @@ final class SettingsTest extends TestCase
         self::assertSame(6 * 60 + 30, $settings->journeeReferenceContractuelle()->value());
         self::assertSame(7 * 60, $settings->journeeReferenceEffective()->value());
         self::assertSame(3 * 60, $settings->rttMax()->value());
+        self::assertSame(17 * 60, $settings->finApresMidiTeletravail()->value());
     }
 
     #[Test]
@@ -93,6 +96,7 @@ final class SettingsTest extends TestCase
             journeeReferenceContractuelle: 6 * 60,
             journeeReferenceEffective: 7 * 60,
             rttMax: 2 * 60,
+            finApresMidiTeletravail: 16 * 60,
         );
     }
 
@@ -110,6 +114,28 @@ final class SettingsTest extends TestCase
             journeeReferenceContractuelle: 7 * 60,
             journeeReferenceEffective: 7 * 60 + 24,
             rttMax: 2 * 60,
+            finApresMidiTeletravail: 16 * 60,
+        );
+    }
+
+    #[Test]
+    public function it_rejects_a_teletravail_afternoon_end_before_the_break_window_starts(): void
+    {
+        // La fin de demi-journée TT après-midi doit rester après le début de la
+        // fenêtre de pause (11h30 par défaut) : sinon la borne "reprise → fin" du
+        // calcul TT (spec du 28/07/2026) n'a plus de sens.
+        $settings = Settings::defaults($this->user());
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        $settings->update(
+            pauseMinimale: 30,
+            fenetreDebut: 11 * 60 + 30,
+            fenetreFin: 14 * 60,
+            journeeReferenceContractuelle: 7 * 60,
+            journeeReferenceEffective: 7 * 60 + 24,
+            rttMax: 2 * 60,
+            finApresMidiTeletravail: 11 * 60,
         );
     }
 

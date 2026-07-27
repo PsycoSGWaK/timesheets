@@ -92,6 +92,16 @@ final readonly class Minutes
         return $this->value === $other->value;
     }
 
+    public function min(self $other): self
+    {
+        return $this->value <= $other->value ? $this : $other;
+    }
+
+    public function max(self $other): self
+    {
+        return $this->value >= $other->value ? $this : $other;
+    }
+
     /**
      * Rend une heure du jour au format `HH:MM`. Réservé à un instant de la
      * journée (0 à 1439 min) : une valeur négative ou débordante trahit une

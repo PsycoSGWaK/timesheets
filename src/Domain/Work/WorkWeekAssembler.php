@@ -48,6 +48,7 @@ final class WorkWeekAssembler
         Settings $settings,
     ): WorkWeek {
         $probativeByDate = $this->groupProbativePunchesByDate($punches);
+        $allByDate = $this->groupPunchesByDate($punches);
 
         $workDays = [];
         $dayFacts = [];
@@ -58,7 +59,10 @@ final class WorkWeekAssembler
             $event = $eventsByDate[$key] ?? null;
 
             $fact = $this->dailyCalculator->calculate($date, $settings, ...$dayPunches);
-            $fact = $this->eventValorizer->valorize($fact, \count($dayPunches), $event, $settings);
+            // Tous les pointages du jour (y compris prévisionnels) : un TT en
+            // demi-journée précise s'appuie sur des horaires saisis avant tout
+            // pointage réel — le seul indice disponible tant qu'aucun n'existe.
+            $fact = $this->eventValorizer->valorize($fact, $allByDate[$key] ?? [], $event, $settings);
             $dayFacts[] = $fact;
 
             $reading = $employerReadingsByDate[$key] ?? null;
@@ -89,6 +93,21 @@ final class WorkWeekAssembler
             if ($punch->isProbative()) {
                 $byDate[$punch->date()->format('Y-m-d')][] = $punch;
             }
+        }
+
+        return $byDate;
+    }
+
+    /**
+     * @param list<PunchEvent> $punches
+     *
+     * @return array<string, list<PunchEvent>>
+     */
+    private function groupPunchesByDate(array $punches): array
+    {
+        $byDate = [];
+        foreach ($punches as $punch) {
+            $byDate[$punch->date()->format('Y-m-d')][] = $punch;
         }
 
         return $byDate;

@@ -61,6 +61,9 @@
         <label for="rtt_max">RTT acquis au maximum par semaine</label>
         <input type="time" id="rtt_max" name="rtt_max" value="{{ values.rtt_max }}" required>
 
+        <label for="fin_apres_midi_teletravail">Fin de demi-journée télétravail après-midi <span class="field-hint">(la reprise après-midi ne compte jamais au-delà)</span></label>
+        <input type="time" id="fin_apres_midi_teletravail" name="fin_apres_midi_teletravail" value="{{ values.fin_apres_midi_teletravail }}" required>
+
         <button type="submit">Enregistrer</button>
     </form>
 
