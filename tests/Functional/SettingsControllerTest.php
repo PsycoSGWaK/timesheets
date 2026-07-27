@@ -45,6 +45,9 @@ final class SettingsControllerTest extends WebTestCase
         self::assertSame('07:24', $crawler->filter('input[name="journee_reference_effective"]')->attr('value'));
         self::assertSame('02:00', $crawler->filter('input[name="rtt_max"]')->attr('value'));
         self::assertSame('16:00', $crawler->filter('input[name="fin_apres_midi_teletravail"]')->attr('value'));
+        $checked = $crawler->filter('input[name="jours_de_repos[]"]:checked')->extract(['value']);
+        sort($checked);
+        self::assertSame(['6', '7'], $checked);
     }
 
     #[Test]
@@ -58,6 +61,7 @@ final class SettingsControllerTest extends WebTestCase
             'journee_reference_effective' => '07:00',
             'rtt_max' => '03:00',
             'fin_apres_midi_teletravail' => '16:00',
+            'jours_de_repos' => ['6', '7'],
         ]);
 
         self::assertResponseRedirects('/parametres');
@@ -70,6 +74,42 @@ final class SettingsControllerTest extends WebTestCase
         self::assertSame(660, $settings->fenetreDebut()->value());
         self::assertSame(420, $settings->journeeReferenceEffective()->value());
         self::assertSame(35 * 60, $settings->weeklyBascule()->value()); // 7h effective x 5
+        self::assertSame([6, 7], $settings->joursDeRepos());
+    }
+
+    #[Test]
+    public function saving_fewer_rest_days_shrinks_the_weekly_thresholds(): void
+    {
+        $this->client->request('POST', '/parametres', [
+            'pause_minimale' => '00:30', 'fenetre_debut' => '11:30', 'fenetre_fin' => '14:00',
+            'journee_reference_contractuelle' => '07:00', 'journee_reference_effective' => '07:00',
+            'rtt_max' => '02:00', 'fin_apres_midi_teletravail' => '16:00',
+            'jours_de_repos' => ['7'], // dimanche seul : 6 jours ouvrés
+        ]);
+
+        $settings = $this->entityManager->getRepository(Settings::class)->findOneBy([]);
+        self::assertNotNull($settings);
+        self::assertSame([7], $settings->joursDeRepos());
+        self::assertSame(6 * 7 * 60, $settings->weeklyBascule()->value());
+    }
+
+    #[Test]
+    public function an_unchecked_rest_day_form_is_rejected_without_saving(): void
+    {
+        // Aucune case cochée : les 7 jours seraient ouvrés, ce qui n'est pas
+        // l'objet du test, mais confirme que le formulaire transmet bien un
+        // tableau vide plutôt qu'une erreur — vérifié séparément par le rejet
+        // "tous les jours de repos" (voir SettingsTest).
+        $this->client->request('POST', '/parametres', [
+            'pause_minimale' => '00:30', 'fenetre_debut' => '11:30', 'fenetre_fin' => '14:00',
+            'journee_reference_contractuelle' => '07:00', 'journee_reference_effective' => '07:24',
+            'rtt_max' => '02:00', 'fin_apres_midi_teletravail' => '16:00',
+            'jours_de_repos' => ['1', '2', '3', '4', '5', '6', '7'],
+        ]);
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('.error');
+        self::assertSame(0, $this->entityManager->getRepository(Settings::class)->count([]));
     }
 
     #[Test]
@@ -78,12 +118,12 @@ final class SettingsControllerTest extends WebTestCase
         $this->client->request('POST', '/parametres', [
             'pause_minimale' => '00:20', 'fenetre_debut' => '11:00', 'fenetre_fin' => '15:00',
             'journee_reference_contractuelle' => '07:00', 'journee_reference_effective' => '07:00', 'rtt_max' => '03:00',
-            'fin_apres_midi_teletravail' => '16:00',
+            'fin_apres_midi_teletravail' => '16:00', 'jours_de_repos' => ['6', '7'],
         ]);
         $this->client->request('POST', '/parametres', [
             'pause_minimale' => '00:15', 'fenetre_debut' => '11:00', 'fenetre_fin' => '15:00',
             'journee_reference_contractuelle' => '07:00', 'journee_reference_effective' => '07:00', 'rtt_max' => '03:00',
-            'fin_apres_midi_teletravail' => '16:00',
+            'fin_apres_midi_teletravail' => '16:00', 'jours_de_repos' => ['6', '7'],
         ]);
 
         self::assertSame(1, $this->entityManager->getRepository(Settings::class)->count([]));

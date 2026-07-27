@@ -77,6 +77,7 @@
         font: inherit; padding: 0; line-height: 1;
     }
     .event-badge button:hover { color: var(--status-critical); }
+    .event-badge--repos { color: var(--text-muted); font-style: italic; }
     .event-form { display: flex; gap: .3rem; align-items: center; }
     .event-form select {
         background: var(--surface-card); color: var(--text-primary);
@@ -124,6 +125,7 @@
     'employer_zero': 'critical',
     'pending': 'muted',
     'no_reading': 'muted',
+    'repos': 'muted',
 } %}
 <main>
     {% for message in app.flashes('error') %}
@@ -222,7 +224,9 @@
                 <tr class="{{ reco.needsAttention ? 'row-' ~ tone : '' }}">
                     <td><a href="{{ path('day', {date: day.date|date('Y-m-d')}) }}">{{ jours[day.date|date('N')] }} {{ day.date|date('d/m') }}</a></td>
                     <td>
-                        {% if day.event %}
+                        {% if reco.status.value == 'repos' %}
+                            <span class="event-badge event-badge--repos">Repos</span>
+                        {% elseif day.event %}
                             <span class="event-badge">
                                 {{ day.event.code.label }}{% if day.event.half %} — {{ day.event.half.label }}{% endif %}
                                 <form method="post" action="{{ path('day_event_remove') }}">

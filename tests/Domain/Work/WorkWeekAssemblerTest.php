@@ -136,6 +136,18 @@ final class WorkWeekAssemblerTest extends TestCase
     }
 
     #[Test]
+    public function a_rest_day_is_reconciled_as_repos_regardless_of_reading(): void
+    {
+        // Samedi 25/07, jour de repos par défaut : rien n'est attendu.
+        $readings = ['2026-07-25' => Minutes::of(0)];
+
+        $week = $this->assemble([], $readings);
+
+        $saturday = $week->days()[5];
+        self::assertSame(ReconciliationStatus::Repos, $saturday->reconciliation()->status());
+    }
+
+    #[Test]
     public function a_day_without_any_event_exposes_none(): void
     {
         $week = $this->assemble([], []);

@@ -15,6 +15,10 @@ use App\Domain\Time\Minutes;
  * Une garde essentielle : ADP ne consolide ses totaux qu'après minuit. Tant qu'une
  * journée n'est pas passée, son total n'est pas stabilisé — le détecteur reste alors
  * silencieux (statut « en attente ») plutôt que d'alerter chaque soir sans motif (§4bis).
+ *
+ * Un jour de repos déclaré dans le paramétrage (spec du 28/07/2026) n'attend rien :
+ * aucune comparaison n'a de sens, même si un relevé ADP existe ou qu'un pointage
+ * réel a été badgé ce jour-là.
  */
 final class ReconciliationDetector
 {
@@ -23,8 +27,13 @@ final class ReconciliationDetector
         Minutes $ourMinutes,
         ?Minutes $employerMinutes,
         \DateTimeImmutable $today,
+        bool $isRestDay = false,
     ): DayReconciliation {
         $date = $date->setTime(0, 0, 0, 0);
+
+        if ($isRestDay) {
+            return new DayReconciliation($date, $ourMinutes, $employerMinutes, null, ReconciliationStatus::Repos);
+        }
 
         if (null === $employerMinutes) {
             return new DayReconciliation($date, $ourMinutes, null, null, ReconciliationStatus::NoReading);
