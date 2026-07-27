@@ -2,8 +2,113 @@
 <html>
     <head>
         <meta charset="UTF-8">
-        <title>{% block title %}Welcome!{% endblock %}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>{% block title %}Timesheets{% endblock %}</title>
         <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
+        <style>
+            :root {
+                color-scheme: light;
+                --surface-1: #fcfcfb;
+                --surface-2: #f9f9f7;
+                --surface-card: #ffffff;
+                --text-primary: #0b0b0b;
+                --text-secondary: #52514e;
+                --text-muted: #898781;
+                --gridline: #e1e0d9;
+                --border: rgba(11, 11, 11, 0.10);
+                --accent: #2a78d6;
+                --accent-ink: #ffffff;
+                --status-good: #0ca30c;
+                --status-good-bg: #e8f6e8;
+                --status-warning: #fab219;
+                --status-warning-bg: #fff6e2;
+                --status-serious: #ec835a;
+                --status-serious-bg: #fdece5;
+                --status-critical: #d03b3b;
+                --status-critical-bg: #fbe7e7;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root:where(:not([data-theme="light"])) {
+                    color-scheme: dark;
+                    --surface-1: #1a1a19;
+                    --surface-2: #0d0d0d;
+                    --surface-card: #232322;
+                    --text-primary: #ffffff;
+                    --text-secondary: #c3c2b7;
+                    --text-muted: #898781;
+                    --gridline: #2c2c2a;
+                    --border: rgba(255, 255, 255, 0.10);
+                    --accent: #3987e5;
+                    --accent-ink: #0b0b0b;
+                    --status-good: #0ca30c;
+                    --status-good-bg: #0f2410;
+                    --status-warning: #fab219;
+                    --status-warning-bg: #2b2210;
+                    --status-serious: #ec835a;
+                    --status-serious-bg: #2c1a12;
+                    --status-critical: #e66767;
+                    --status-critical-bg: #2c1414;
+                }
+            }
+            :root[data-theme="dark"] {
+                color-scheme: dark;
+                --surface-1: #1a1a19;
+                --surface-2: #0d0d0d;
+                --surface-card: #232322;
+                --text-primary: #ffffff;
+                --text-secondary: #c3c2b7;
+                --text-muted: #898781;
+                --gridline: #2c2c2a;
+                --border: rgba(255, 255, 255, 0.10);
+                --accent: #3987e5;
+                --accent-ink: #0b0b0b;
+                --status-good: #0ca30c;
+                --status-good-bg: #0f2410;
+                --status-warning: #fab219;
+                --status-warning-bg: #2b2210;
+                --status-serious: #ec835a;
+                --status-serious-bg: #2c1a12;
+                --status-critical: #e66767;
+                --status-critical-bg: #2c1414;
+            }
+
+            * { box-sizing: border-box; }
+            body {
+                font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+                color: var(--text-primary);
+                background: var(--surface-2);
+                margin: 0;
+            }
+            a { color: var(--accent); }
+
+            .app-nav {
+                display: flex;
+                align-items: center;
+                gap: 1.5rem;
+                padding: .85rem 1.25rem;
+                background: var(--surface-1);
+                border-bottom: 1px solid var(--gridline);
+            }
+            .app-nav__brand {
+                font-weight: 700;
+                color: var(--text-primary);
+                text-decoration: none;
+                margin-right: auto;
+            }
+            .app-nav a:not(.app-nav__brand) {
+                color: var(--text-secondary);
+                text-decoration: none;
+                font-size: .92rem;
+                font-weight: 600;
+                padding: .3rem .1rem;
+                border-bottom: 2px solid transparent;
+            }
+            .app-nav a[aria-current="page"] {
+                color: var(--text-primary);
+                border-bottom-color: var(--accent);
+            }
+            .app-nav a:hover { color: var(--text-primary); }
+        </style>
         {% block stylesheets %}
         {% endblock %}
 
@@ -19,6 +124,12 @@
         {% endif %}
     </head>
     <body>
+        <nav class="app-nav">
+            <a class="app-nav__brand" href="{{ path('week_current') }}">Timesheets</a>
+            <a href="{{ path('import') }}"{% if app.request.attributes.get('_route') == 'import' %} aria-current="page"{% endif %}>Coller un pointage</a>
+            <a href="{{ path('week_current') }}"{% if app.request.attributes.get('_route') starts with 'week' %} aria-current="page"{% endif %}>Ma semaine</a>
+            <a href="{{ path('projection') }}"{% if app.request.attributes.get('_route') == 'projection' %} aria-current="page"{% endif %}>Quand partir ?</a>
+        </nav>
         {% block body %}{% endblock %}
     </body>
 </html>

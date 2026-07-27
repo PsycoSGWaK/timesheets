@@ -16,28 +16,35 @@
 ```
 ~/repositories/timesheets/            dépôt git complet, hors de portée du web
         ├── src/  config/  vendor/  .env.local
-        └── public/                   ← seul dossier exposé
-                  ▲
-                  │ lien symbolique
-~/public_html/timesheets/public ─────┘   ← document root déclaré dans cPanel
+        └── public/                   ← seul dossier exposé, en Document Root direct
 ```
 
-`~/public_html/timesheets/` est un **vrai dossier**, dont l'unique entrée `public` est un
-**lien symbolique** vers le `public/` du dépôt. Montage strictement identique à celui du
-portfolio.
+**Document Root du sous-domaine = `/home/nayo1552/repositories/timesheets/public`**,
+configuré directement dans cPanel → Domaines. Pas de lien symbolique.
 
-```bash
-mkdir -p ~/public_html/timesheets
-ln -s ~/repositories/timesheets/public ~/public_html/timesheets/public
-```
+> **Écart avec le montage du portfolio (lien symbolique `public_html/.../public` →
+> dépôt), découvert en déployant timesheets le 27/07/2026.** Le sous-domaine
+> `timesheets.idevnormandie.fr` a été créé avec un vhost Apache qui **refuse de suivre
+> les liens symboliques** (`AH00037: Symbolic link not allowed`), contrairement à celui
+> du portfolio (`guillaumehurard.fr`, un domaine addon — probablement un template cPanel
+> différent). Aucun `.htaccess` ne peut lever cette restriction : la sous-option
+> `FollowSymLinks` d'`Options` n'est pas overridable sur ce compte, même quand d'autres
+> sous-options (`Indexes`) le sont. Contournement retenu : pointer le Document Root
+> **directement** sur `repositories/<projet>/public`, sans lien.
+>
+> **Autre piège rencontré à ce point :** une fois le Document Root changé, Apache a
+> renvoyé `AH00529` (« unable to check htaccess file ») sur `repositories/timesheets/`.
+> Ce dossier, créé par l'outil Git de cPanel, n'avait pas la permission `x` pour "Autres"
+> — nécessaire pour qu'Apache le traverse. Correction : `chmod 755` sur ce dossier
+> (`~/repositories` lui-même avait déjà les bonnes permissions par défaut).
+>
+> **Pour un futur sous-domaine sur ce compte : essayer d'abord le Document Root direct**,
+> décrit ci-dessus, plutôt que le lien symbolique — plus simple et déjà validé une fois
+> qu'on sait que `FollowSymLinks` peut être bloqué sans recours.
 
-> **Précaution.** Si cPanel a créé `~/public_html/timesheets/public` comme un vrai dossier lors
-> de la création du sous-domaine, il doit être retiré avant de poser le lien — après
-> vérification de son contenu, jamais à l'aveugle.
-
-Ce montage est celui du portfolio. **Ne pas reprendre celui de l'application `fmxx`**, qui
-recopie tout son dépôt à plat dans son document root : ce pattern expose `vendor/` et `.env`, et
-n'est pas transposable à une application Symfony.
+**Ne pas reprendre le montage de l'application `fmxx`**, qui recopie tout son dépôt à plat
+dans son document root : ce pattern expose `vendor/` et `.env`, et n'est pas transposable à
+une application Symfony.
 
 ## Base de données
 
