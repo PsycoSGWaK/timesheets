@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Domain\Projection\WeekProjectionCalculator;
+use App\Domain\Week\IsoWeek;
 use App\Domain\Work\WorkWeekAssembler;
 use App\Entity\User;
 use App\Repository\DayEventRepository;
@@ -68,12 +69,8 @@ final class WeekController extends AbstractController
 
     private function renderWeek(User $user, int $year, int $week): Response
     {
-        $monday = (new \DateTimeImmutable())->setISODate($year, $week)->setTime(0, 0, 0);
-
-        $dates = [];
-        for ($offset = 0; $offset < 7; ++$offset) {
-            $dates[] = $monday->modify(sprintf('+%d days', $offset));
-        }
+        $dates = IsoWeek::dates($year, $week);
+        $monday = $dates[0];
 
         $today = $this->today();
         $settings = $this->settingsRepository->forUser($user);
