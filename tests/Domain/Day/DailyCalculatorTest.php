@@ -9,12 +9,20 @@ use App\Domain\Day\DailyCalculator;
 use App\Domain\Day\DayFact;
 use App\Domain\Time\Minutes;
 use App\Entity\PunchEvent;
+use App\Entity\User;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 final class DailyCalculatorTest extends TestCase
 {
     private const DAY = '2026-07-23';
+
+    private User $user;
+
+    protected function setUp(): void
+    {
+        $this->user = User::register('guillaume@example.com', 'hashed-password');
+    }
 
     #[Test]
     public function a_standard_day_totals_its_two_work_spans_without_penalty(): void
@@ -162,6 +170,6 @@ final class DailyCalculatorTest extends TestCase
 
     private function punch(string $clock, int $rang): PunchEvent
     {
-        return PunchEvent::realFromAdp(new \DateTimeImmutable(self::DAY), Minutes::fromClock($clock), $rang);
+        return PunchEvent::realFromAdp($this->user, new \DateTimeImmutable(self::DAY), Minutes::fromClock($clock), $rang);
     }
 }

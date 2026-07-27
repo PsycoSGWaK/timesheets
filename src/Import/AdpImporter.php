@@ -10,6 +10,7 @@ use App\Domain\Adp\ImportPlanner;
 use App\Domain\Adp\ParsedWeek;
 use App\Entity\PunchEvent;
 use App\Entity\RawImport;
+use App\Entity\User;
 use App\Repository\PunchEventRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -33,15 +34,15 @@ final class AdpImporter
     ) {
     }
 
-    public function import(string $clipboard, int $year, ?\DateTimeImmutable $importedAt = null): ImportPlan
+    public function import(User $user, string $clipboard, int $year, ?\DateTimeImmutable $importedAt = null): ImportPlan
     {
         $importedAt ??= new \DateTimeImmutable();
 
         $week = $this->parser->parse($clipboard, $year);
 
-        $this->entityManager->persist(RawImport::capture($clipboard, $year, $importedAt));
+        $this->entityManager->persist(RawImport::capture($user, $clipboard, $year, $importedAt));
 
-        $plan = $this->planner->plan($week, $importedAt, $this->existingPunchesByDate($week));
+        $plan = $this->planner->plan($user, $week, $importedAt, $this->existingPunchesByDate($user, $week));
 
         foreach ($plan->provisionalToSupersede() as $punch) {
             $this->entityManager->remove($punch);
@@ -61,12 +62,12 @@ final class AdpImporter
     /**
      * @return array<string, list<PunchEvent>>
      */
-    private function existingPunchesByDate(ParsedWeek $week): array
+    private function existingPunchesByDate(User $user, ParsedWeek $week): array
     {
         $dates = array_map(static fn ($day): \DateTimeImmutable => $day->date(), $week->days());
 
         $byDate = [];
-        foreach ($this->punches->findByDates($dates) as $punch) {
+        foreach ($this->punches->findByDates($user, $dates) as $punch) {
             $byDate[$punch->date()->format('Y-m-d')][] = $punch;
         }
 

@@ -8,7 +8,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Le texte ADP collé, conservé intégralement.
+ * Le texte ADP collé par un utilisateur, conservé intégralement.
  *
  * Garder le presse-papier tel quel permet de rejouer le parseur sur l'historique sans
  * ressaisie (source-adp §5.2) : quand les règles d'analyse évoluent, on retraite les
@@ -24,6 +24,10 @@ final class RawImport
     #[ORM\Column]
     private ?int $id = null;
 
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(nullable: false)]
+    private User $user;
+
     #[ORM\Column(type: Types::TEXT)]
     private string $rawPayload;
 
@@ -33,25 +37,31 @@ final class RawImport
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $importedAt;
 
-    private function __construct(string $rawPayload, int $year, \DateTimeImmutable $importedAt)
+    private function __construct(User $user, string $rawPayload, int $year, \DateTimeImmutable $importedAt)
     {
         if ('' === trim($rawPayload)) {
             throw new \InvalidArgumentException('Un import sans texte à conserver n\'a pas de sens.');
         }
 
+        $this->user = $user;
         $this->rawPayload = $rawPayload;
         $this->year = $year;
         $this->importedAt = $importedAt;
     }
 
-    public static function capture(string $rawPayload, int $year, \DateTimeImmutable $importedAt): self
+    public static function capture(User $user, string $rawPayload, int $year, \DateTimeImmutable $importedAt): self
     {
-        return new self($rawPayload, $year, $importedAt);
+        return new self($user, $rawPayload, $year, $importedAt);
     }
 
     public function id(): ?int
     {
         return $this->id;
+    }
+
+    public function user(): User
+    {
+        return $this->user;
     }
 
     public function rawPayload(): string

@@ -9,6 +9,21 @@
     .nav a { text-decoration: none; font-weight: 600; font-size: .9rem; white-space: nowrap; }
     h1 { font-size: 1.3rem; margin: 0; text-align: center; }
 
+    .week-picker {
+        display: flex; justify-content: center; align-items: center; gap: .4rem;
+        margin-top: .5rem;
+    }
+    .week-picker input {
+        background: var(--surface-card); color: var(--text-primary);
+        border: 1px solid var(--gridline); border-radius: 6px;
+        font: inherit; font-size: .82rem; padding: .25rem .4rem;
+    }
+    .week-picker button {
+        border: 1px solid var(--gridline); border-radius: 6px; background: var(--surface-card);
+        color: var(--text-secondary); font: inherit; font-size: .82rem; padding: .25rem .6rem; cursor: pointer;
+    }
+    .week-picker button:hover { color: var(--text-primary); border-color: var(--accent); }
+
     .stat-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: .9rem; margin: 0 0 1.25rem; }
     .stat-tile {
         background: var(--surface-card); border: 1px solid var(--gridline); border-radius: 10px;
@@ -51,6 +66,29 @@
     .status-critical, .status-serious { color: var(--text-primary); }
 
     .back-link { display: inline-block; margin-top: 2rem; font-weight: 600; text-decoration: none; }
+
+    .event-badge {
+        display: inline-flex; align-items: center; gap: .4rem;
+        font-size: .85rem; color: var(--text-primary);
+    }
+    .event-badge form { display: inline; }
+    .event-badge button {
+        border: 0; background: none; color: var(--text-muted); cursor: pointer;
+        font: inherit; padding: 0; line-height: 1;
+    }
+    .event-badge button:hover { color: var(--status-critical); }
+    .event-form { display: flex; gap: .3rem; align-items: center; }
+    .event-form select {
+        background: var(--surface-card); color: var(--text-primary);
+        border: 1px solid var(--gridline); border-radius: 6px;
+        font: inherit; font-size: .82rem; padding: .2rem .3rem;
+    }
+    .event-form button {
+        border: 0; border-radius: 6px; background: var(--surface-card);
+        border: 1px solid var(--gridline); color: var(--text-secondary);
+        font: inherit; font-size: .82rem; padding: .2rem .5rem; cursor: pointer;
+    }
+    .event-form button:hover { color: var(--text-primary); border-color: var(--accent); }
 </style>
 {% endblock %}
 
@@ -66,7 +104,13 @@
 <main>
     <div class="nav">
         <a href="{{ path('week', {year: previous.year, week: previous.week}) }}">← Semaine {{ previous.week }}</a>
-        <h1>Semaine {{ week }} — du {{ monday|date('d/m') }} au {{ sunday|date('d/m/Y') }}</h1>
+        <div>
+            <h1>Semaine {{ week }} — du {{ monday|date('d/m') }} au {{ sunday|date('d/m/Y') }}</h1>
+            <form class="week-picker" method="get" action="{{ path('week_goto') }}">
+                <input type="week" name="semaine" value="{{ pickerValue }}">
+                <button type="submit">Aller</button>
+            </form>
+        </div>
         <a href="{{ path('week', {year: next.year, week: next.week}) }}">Semaine {{ next.week }} →</a>
     </div>
 
@@ -106,6 +150,7 @@
         <thead>
             <tr>
                 <th>Jour</th>
+                <th>Événement</th>
                 <th class="num">Nous</th>
                 <th class="num">ADP</th>
                 <th class="num">Écart</th>
@@ -117,7 +162,34 @@
                 {% set reco = day.reconciliation %}
                 {% set tone = statusTone[reco.status.value] ?? 'muted' %}
                 <tr class="{{ reco.needsAttention ? 'row-' ~ tone : '' }}">
-                    <td>{{ jours[day.date|date('N')] }} {{ day.date|date('d/m') }}</td>
+                    <td><a href="{{ path('day', {date: day.date|date('Y-m-d')}) }}">{{ jours[day.date|date('N')] }} {{ day.date|date('d/m') }}</a></td>
+                    <td>
+                        {% if day.event %}
+                            <span class="event-badge">
+                                {{ day.event.code.label }}
+                                <form method="post" action="{{ path('day_event_remove') }}">
+                                    <input type="hidden" name="date" value="{{ day.date|date('Y-m-d') }}">
+                                    <button type="submit" title="Retirer">×</button>
+                                </form>
+                            </span>
+                        {% else %}
+                            <form class="event-form" method="post" action="{{ path('day_event_declare') }}">
+                                <input type="hidden" name="date" value="{{ day.date|date('Y-m-d') }}">
+                                <select name="code">
+                                    <option value="TT">Télétravail</option>
+                                    <option value="CP">Congé payé</option>
+                                    <option value="CA">Congé ancienneté</option>
+                                    <option value="RTT">RTT posé</option>
+                                    <option value="JF">Jour férié</option>
+                                </select>
+                                <select name="portion">
+                                    <option value="full">1 j</option>
+                                    <option value="half">0,5 j</option>
+                                </select>
+                                <button type="submit">Ajouter</button>
+                            </form>
+                        {% endif %}
+                    </td>
                     <td class="num">{{ day.dayFact.workedMinutes.value|duree }}</td>
                     <td class="num">
                         {%- if day.employerReading is not null -%}

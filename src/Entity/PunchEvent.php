@@ -11,7 +11,7 @@ use App\Repository\PunchEventRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Un pointage : un horodatage badgé un jour donné.
+ * Un pointage : un horodatage badgé un jour donné, pour un utilisateur donné.
  *
  * C'est la seule vérité de l'application (spec §4.6). Un pointage est un fait :
  * une fois créé, il n'est jamais modifié. La correction d'une hypothèse passe par
@@ -21,18 +21,23 @@ use Doctrine\ORM\Mapping as ORM;
  * Deux dimensions indépendantes le qualifient : sa {@see PunchNature} (réel /
  * prévisionnel) et son {@see PunchOrigin} (ADP / saisie manuelle).
  *
- * L'unicité de `(date, time, rang)` garantit un import idempotent : recoller la même
- * semaine ne duplique aucun pointage (source-adp.md §5.3).
+ * L'unicité de `(user, date, time, rang)` garantit un import idempotent : recoller
+ * la même semaine ne duplique aucun pointage (source-adp.md §5.3), et cloisonne
+ * chaque utilisateur dans son propre espace de créneaux.
  */
 #[ORM\Entity(repositoryClass: PunchEventRepository::class)]
 #[ORM\Table(name: 'punch_event')]
-#[ORM\UniqueConstraint(name: 'uniq_punch_slot', columns: ['date', 'time', 'rang'])]
+#[ORM\UniqueConstraint(name: 'uniq_punch_slot', columns: ['user_id', 'date', 'time', 'rang'])]
 final class PunchEvent
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(nullable: false)]
+    private User $user;
 
     #[ORM\Column(type: 'date_immutable')]
     private \DateTimeImmutable $date;
@@ -52,6 +57,7 @@ final class PunchEvent
     private PunchOrigin $origin;
 
     private function __construct(
+        User $user,
         \DateTimeImmutable $date,
         Minutes $time,
         int $rang,
@@ -71,6 +77,7 @@ final class PunchEvent
             );
         }
 
+        $this->user = $user;
         // La date porte une journée, pas un instant : on écrase toute heure résiduelle.
         $this->date = $date->setTime(0, 0, 0, 0);
         $this->time = $minutes;
@@ -80,26 +87,31 @@ final class PunchEvent
     }
 
     /** Pointage collé depuis ADP : un fait constaté. */
-    public static function realFromAdp(\DateTimeImmutable $date, Minutes $time, int $rang): self
+    public static function realFromAdp(User $user, \DateTimeImmutable $date, Minutes $time, int $rang): self
     {
-        return new self($date, $time, $rang, PunchNature::Reel, PunchOrigin::Adp);
+        return new self($user, $date, $time, $rang, PunchNature::Reel, PunchOrigin::Adp);
     }
 
     /** Pointage saisi à la main par anticipation : une hypothèse de projection. */
-    public static function provisional(\DateTimeImmutable $date, Minutes $time, int $rang): self
+    public static function provisional(User $user, \DateTimeImmutable $date, Minutes $time, int $rang): self
     {
-        return new self($date, $time, $rang, PunchNature::Previsionnel, PunchOrigin::SaisieManuelle);
+        return new self($user, $date, $time, $rang, PunchNature::Previsionnel, PunchOrigin::SaisieManuelle);
     }
 
     /** Correction manuelle : un badge réel qu'ADP a manqué, comblé à la main. */
-    public static function manualCorrection(\DateTimeImmutable $date, Minutes $time, int $rang): self
+    public static function manualCorrection(User $user, \DateTimeImmutable $date, Minutes $time, int $rang): self
     {
-        return new self($date, $time, $rang, PunchNature::Reel, PunchOrigin::SaisieManuelle);
+        return new self($user, $date, $time, $rang, PunchNature::Reel, PunchOrigin::SaisieManuelle);
     }
 
     public function id(): ?int
     {
         return $this->id;
+    }
+
+    public function user(): User
+    {
+        return $this->user;
     }
 
     public function date(): \DateTimeImmutable
@@ -133,13 +145,14 @@ final class PunchEvent
     }
 
     /**
-     * Deux pointages occupent le même créneau s'ils tombent le même jour au même rang.
-     * Le remplacement d'un prévisionnel par un réel se joue sur ce créneau, quelle que
-     * soit l'heure exacte.
+     * Deux pointages occupent le même créneau s'ils appartiennent au même
+     * utilisateur, le même jour, au même rang. Le remplacement d'un prévisionnel
+     * par un réel se joue sur ce créneau, quelle que soit l'heure exacte.
      */
     public function isSameSlotAs(self $other): bool
     {
         return $this->rang === $other->rang
+            && $this->user === $other->user
             && $this->date->format('Y-m-d') === $other->date->format('Y-m-d');
     }
 }

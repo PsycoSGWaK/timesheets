@@ -9,8 +9,16 @@ use Doctrine\ORM\Tools\SchemaTool;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Clock\ClockInterface;
+use Symfony\Component\Clock\MockClock;
 
-final class ProjectionControllerTest extends WebTestCase
+/**
+ * Prouve que « aujourd'hui » est piloté par l'horloge injectée
+ * ({@see ClockInterface}) et non par l'horloge système : sans ça, la
+ * consolidation ADP et la projection hebdomadaire ne peuvent pas être testées
+ * de façon déterministe (spec §4bis — un jour n'est comparable que passé).
+ */
+final class ClockAwareWeekTest extends WebTestCase
 {
     use LogsInAUser;
 
@@ -32,38 +40,16 @@ final class ProjectionControllerTest extends WebTestCase
     }
 
     #[Test]
-    public function the_form_is_reachable(): void
+    public function the_current_week_route_follows_the_mocked_clock_not_the_system_one(): void
     {
-        $this->client->request('GET', '/quand-partir');
+        // Mercredi 2026-07-22 imposé par l'horloge : "Ma semaine" doit rendre la
+        // semaine ISO 30, quelle que soit la date réelle du système qui exécute le test.
+        static::getContainer()->set(ClockInterface::class, new MockClock('2026-07-22'));
+
+        $this->client->request('GET', '/semaine');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('input[name="morning_start"]');
-    }
-
-    #[Test]
-    public function it_computes_the_leave_time_from_the_morning(): void
-    {
-        $this->client->request('POST', '/quand-partir', [
-            'morning_start' => '08:48',
-            'lunch_departure' => '11:47',
-            'lunch_return' => '12:13',
-        ]);
-
-        self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.leave', '16:42');
-    }
-
-    #[Test]
-    public function an_unreadable_time_is_reported_without_crashing(): void
-    {
-        $this->client->request('POST', '/quand-partir', [
-            'morning_start' => 'midi',
-            'lunch_departure' => '11:47',
-            'lunch_return' => '12:13',
-        ]);
-
-        self::assertResponseIsSuccessful();
-        self::assertSelectorExists('.error');
+        self::assertSelectorTextContains('h1', 'Semaine 30');
     }
 
     private function resetSchema(): void

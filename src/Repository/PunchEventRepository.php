@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\PunchEvent;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -19,14 +20,14 @@ final class PunchEventRepository extends ServiceEntityRepository
     }
 
     /**
-     * Charge les pointages déjà en base pour un ensemble de dates, afin que l'import
-     * puisse dédupliquer et repérer les prévisionnels à supprimer.
+     * Charge les pointages déjà en base d'un utilisateur pour un ensemble de dates,
+     * afin que l'import puisse dédupliquer et repérer les prévisionnels à supprimer.
      *
      * @param list<\DateTimeImmutable> $dates
      *
      * @return list<PunchEvent>
      */
-    public function findByDates(array $dates): array
+    public function findByDates(User $user, array $dates): array
     {
         if ([] === $dates) {
             return [];
@@ -35,7 +36,9 @@ final class PunchEventRepository extends ServiceEntityRepository
         $days = array_map(static fn (\DateTimeImmutable $d): string => $d->format('Y-m-d'), $dates);
 
         return $this->createQueryBuilder('p')
+            ->andWhere('p.user = :user')
             ->andWhere('p.date IN (:days)')
+            ->setParameter('user', $user)
             ->setParameter('days', $days)
             ->getQuery()
             ->getResult();

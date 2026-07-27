@@ -7,6 +7,7 @@ namespace App\Domain\Adp;
 use App\Domain\Time\Minutes;
 use App\Entity\EmployerReading;
 use App\Entity\PunchEvent;
+use App\Entity\User;
 
 /**
  * Décide, sans rien persister, ce qu'un import ADP doit produire.
@@ -21,9 +22,11 @@ use App\Entity\PunchEvent;
 final class ImportPlanner
 {
     /**
-     * @param array<string, list<PunchEvent>> $existingPunchesByDate pointages déjà en base, indexés par date « Y-m-d »
+     * @param array<string, list<PunchEvent>> $existingPunchesByDate pointages déjà en base
+     *        pour cet utilisateur, indexés par date « Y-m-d »
      */
     public function plan(
+        User $user,
         ParsedWeek $week,
         \DateTimeImmutable $observedAt,
         array $existingPunchesByDate = [],
@@ -35,7 +38,7 @@ final class ImportPlanner
         foreach ($week->days() as $day) {
             $adpTotal = $day->adpTotal();
             if (null !== $adpTotal) {
-                $readings[] = EmployerReading::record($day->date(), $adpTotal, $observedAt);
+                $readings[] = EmployerReading::record($user, $day->date(), $adpTotal, $observedAt);
             }
 
             if ([] === $day->punchTimes()) {
@@ -54,7 +57,7 @@ final class ImportPlanner
             $rang = 1;
             foreach ($day->punchTimes() as $time) {
                 if (!$this->alreadyRecorded($existing, $time, $rang)) {
-                    $toCreate[] = PunchEvent::realFromAdp($day->date(), $time, $rang);
+                    $toCreate[] = PunchEvent::realFromAdp($user, $day->date(), $time, $rang);
                 }
                 ++$rang;
             }

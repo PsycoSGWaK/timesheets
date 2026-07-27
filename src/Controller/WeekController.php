@@ -6,11 +6,16 @@ namespace App\Controller;
 
 use App\Domain\Projection\WeekProjectionCalculator;
 use App\Domain\Work\WorkWeekAssembler;
+use App\Entity\User;
+use App\Repository\DayEventRepository;
 use App\Repository\EmployerReadingRepository;
 use App\Repository\PunchEventRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Clock\ClockInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 /**
  * Affiche une semaine : notre recalcul face au relevé d'ADP, jour par jour, plus
@@ -21,26 +26,45 @@ final class WeekController extends AbstractController
     public function __construct(
         private readonly PunchEventRepository $punches,
         private readonly EmployerReadingRepository $readings,
+        private readonly DayEventRepository $events,
         private readonly WorkWeekAssembler $assembler,
         private readonly WeekProjectionCalculator $projectionCalculator,
+        private readonly ClockInterface $clock,
     ) {
     }
 
     #[Route('/semaine', name: 'week_current', methods: ['GET'])]
-    public function currentWeek(): Response
+    public function currentWeek(#[CurrentUser] User $user): Response
     {
-        $today = new \DateTimeImmutable('today');
+        $today = $this->today();
 
-        return $this->renderWeek((int) $today->format('o'), (int) $today->format('W'));
+        return $this->renderWeek($user, (int) $today->format('o'), (int) $today->format('W'));
     }
 
     #[Route('/semaine/{year}/{week}', name: 'week', requirements: ['year' => '\d{4}', 'week' => '\d{1,2}'], methods: ['GET'])]
-    public function week(int $year, int $week): Response
+    public function week(int $year, int $week, #[CurrentUser] User $user): Response
     {
-        return $this->renderWeek($year, $week);
+        return $this->renderWeek($user, $year, $week);
     }
 
-    private function renderWeek(int $year, int $week): Response
+    /**
+     * Cible du sélecteur natif <input type="week"> (spec §2, sélection de semaine
+     * plus rapide qu'un défilement précédent/suivant). Une valeur illisible ramène
+     * simplement à la semaine courante plutôt que d'échouer.
+     */
+    #[Route('/semaine/aller', name: 'week_goto', methods: ['GET'])]
+    public function goto(Request $request): Response
+    {
+        $value = (string) $request->query->get('semaine', '');
+
+        if (1 === preg_match('/^(\d{4})-W(\d{2})$/', $value, $matches)) {
+            return $this->redirectToRoute('week', ['year' => (int) $matches[1], 'week' => (int) $matches[2]]);
+        }
+
+        return $this->redirectToRoute('week_current');
+    }
+
+    private function renderWeek(User $user, int $year, int $week): Response
     {
         $monday = (new \DateTimeImmutable())->setISODate($year, $week)->setTime(0, 0, 0);
 
@@ -49,12 +73,13 @@ final class WeekController extends AbstractController
             $dates[] = $monday->modify(sprintf('+%d days', $offset));
         }
 
-        $today = new \DateTimeImmutable('today');
+        $today = $this->today();
 
         $workWeek = $this->assembler->assemble(
             $dates,
-            $this->punches->findByDates($dates),
-            $this->readings->latestMinutesByDates($dates),
+            $this->punches->findByDates($user, $dates),
+            $this->readings->latestMinutesByDates($user, $dates),
+            $this->events->findByDates($user, $dates),
             $today,
         );
 
@@ -74,7 +99,18 @@ final class WeekController extends AbstractController
             'sunday' => $monday->modify('+6 days'),
             'previous' => ['year' => (int) $previous->format('o'), 'week' => (int) $previous->format('W')],
             'next' => ['year' => (int) $next->format('o'), 'week' => (int) $next->format('W')],
+            'pickerValue' => sprintf('%04d-W%02d', $year, $week),
         ]);
+    }
+
+    /**
+     * « Aujourd'hui » à minuit, selon l'horloge injectée — jamais l'horloge système
+     * directement, pour que la consolidation ADP (§4bis) reste testable de façon
+     * déterministe.
+     */
+    private function today(): \DateTimeImmutable
+    {
+        return $this->clock->now()->setTime(0, 0, 0);
     }
 
     /**
