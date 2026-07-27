@@ -162,7 +162,7 @@
                 {% set reco = day.reconciliation %}
                 {% set tone = statusTone[reco.status.value] ?? 'muted' %}
                 <tr class="{{ reco.needsAttention ? 'row-' ~ tone : '' }}">
-                    <td>{{ jours[day.date|date('N')] }} {{ day.date|date('d/m') }}</td>
+                    <td><a href="{{ path('day', {date: day.date|date('Y-m-d')}) }}">{{ jours[day.date|date('N')] }} {{ day.date|date('d/m') }}</a></td>
                     <td>
                         {% if day.event %}
                             <span class="event-badge">
