@@ -95,13 +95,35 @@ final class ReconciliationDetectorTest extends TestCase
         self::assertFalse($day->needsAttention());
     }
 
-    private function reconcile(string $date, int $ourMinutes, ?int $employerMinutes): \App\Domain\Reconciliation\DayReconciliation
+    #[Test]
+    public function a_declared_rest_day_is_repos_regardless_of_any_reading_or_work(): void
+    {
+        // Un jour de repos n'attend rien : ni comparaison, ni alerte, même avec du
+        // travail réel badgé ce jour-là (spec du 28/07/2026).
+        $day = $this->reconcile('2026-07-23', 444, 0, isRestDay: true);
+
+        self::assertSame(ReconciliationStatus::Repos, $day->status());
+        self::assertNull($day->delta());
+        self::assertFalse($day->needsAttention());
+    }
+
+    #[Test]
+    public function a_declared_rest_day_without_any_reading_is_still_repos(): void
+    {
+        $day = $this->reconcile('2026-07-23', 0, null, isRestDay: true);
+
+        self::assertSame(ReconciliationStatus::Repos, $day->status());
+        self::assertFalse($day->needsAttention());
+    }
+
+    private function reconcile(string $date, int $ourMinutes, ?int $employerMinutes, bool $isRestDay = false): \App\Domain\Reconciliation\DayReconciliation
     {
         return (new ReconciliationDetector())->reconcile(
             new \DateTimeImmutable($date),
             Minutes::of($ourMinutes),
             null === $employerMinutes ? null : Minutes::of($employerMinutes),
             new \DateTimeImmutable(self::TODAY),
+            $isRestDay,
         );
     }
 }

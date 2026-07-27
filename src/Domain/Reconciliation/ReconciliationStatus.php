@@ -25,6 +25,9 @@ enum ReconciliationStatus: string
     /** Aucun relevé ADP disponible pour la journée : rien à comparer. */
     case NoReading = 'no_reading';
 
+    /** Jour de repos déclaré dans le paramétrage : rien n'est attendu, aucune comparaison n'a lieu. */
+    case Repos = 'repos';
+
     public function label(): string
     {
         return match ($this) {
@@ -33,6 +36,7 @@ enum ReconciliationStatus: string
             self::EmployerZero => 'Journée perdue chez ADP (0:00)',
             self::Pending => 'En attente de consolidation',
             self::NoReading => 'Pas de relevé ADP',
+            self::Repos => 'Jour de repos',
         };
     }
 }

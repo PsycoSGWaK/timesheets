@@ -71,6 +71,7 @@ final class WorkWeekAssembler
                 $fact->workedMinutes(),
                 $reading,
                 $today,
+                $settings->estJourDeRepos($date),
             );
 
             $workDays[] = new WorkDay($date, $fact, $reading, $reconciliation, $event);

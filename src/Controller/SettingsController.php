@@ -42,8 +42,11 @@ final class SettingsController extends AbstractController
     #[Route('/parametres', name: 'settings', methods: ['GET'])]
     public function show(#[CurrentUser] User $user): Response
     {
+        $settings = $this->settingsRepository->forUser($user);
+
         return $this->render('settings/index.html.twig', [
-            'values' => $this->valuesOf($this->settingsRepository->forUser($user)),
+            'values' => $this->valuesOf($settings),
+            'joursDeRepos' => $settings->joursDeRepos(),
             'error' => null,
         ]);
     }
@@ -55,6 +58,9 @@ final class SettingsController extends AbstractController
         foreach (array_keys(self::FIELDS) as $field) {
             $submitted[$field] = (string) $request->request->get($field, '');
         }
+        // Une case décochée est simplement absente du POST : c'est le comportement
+        // natif des checkboxes HTML, pas une valeur "false" à parser.
+        $joursDeRepos = array_map('intval', $request->request->all('jours_de_repos'));
 
         try {
             $minutes = array_map(
@@ -73,6 +79,7 @@ final class SettingsController extends AbstractController
                 journeeReferenceEffective: $minutes['journee_reference_effective']->value(),
                 rttMax: $minutes['rtt_max']->value(),
                 finApresMidiTeletravail: $minutes['fin_apres_midi_teletravail']->value(),
+                joursDeRepos: $joursDeRepos,
             );
 
             if ($isNew) {
@@ -86,6 +93,7 @@ final class SettingsController extends AbstractController
         } catch (\InvalidArgumentException $exception) {
             return $this->render('settings/index.html.twig', [
                 'values' => $submitted,
+                'joursDeRepos' => $joursDeRepos,
                 'error' => $exception->getMessage(),
             ]);
         }

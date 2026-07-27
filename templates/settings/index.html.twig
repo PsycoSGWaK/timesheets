@@ -27,6 +27,11 @@
     }
     .error { background: var(--status-critical-bg); color: var(--status-critical); }
     .success { background: var(--status-good-bg); color: var(--status-good); }
+    .jours-repos { display: flex; flex-wrap: wrap; gap: .9rem; margin-top: .4rem; }
+    .jours-repos label {
+        display: flex; align-items: center; gap: .35rem; margin: 0;
+        font-weight: 500; font-size: .92rem;
+    }
 </style>
 {% endblock %}
 
@@ -63,6 +68,17 @@
 
         <label for="fin_apres_midi_teletravail">Fin de demi-journée télétravail après-midi <span class="field-hint">(la reprise après-midi ne compte jamais au-delà)</span></label>
         <input type="time" id="fin_apres_midi_teletravail" name="fin_apres_midi_teletravail" value="{{ values.fin_apres_midi_teletravail }}" required>
+
+        <label>Jours de repos <span class="field-hint">(rien n'est attendu ces jours-là, pas comptés dans les seuils hebdomadaires)</span></label>
+        <div class="jours-repos">
+            {% set jours = {1: 'Lun', 2: 'Mar', 3: 'Mer', 4: 'Jeu', 5: 'Ven', 6: 'Sam', 7: 'Dim'} %}
+            {% for iso, label in jours %}
+                <label>
+                    <input type="checkbox" name="jours_de_repos[]" value="{{ iso }}" {{ iso in joursDeRepos ? 'checked' : '' }}>
+                    {{ label }}
+                </label>
+            {% endfor %}
+        </div>
 
         <button type="submit">Enregistrer</button>
     </form>
