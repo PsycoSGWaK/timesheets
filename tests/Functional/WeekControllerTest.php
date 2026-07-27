@@ -62,6 +62,32 @@ final class WeekControllerTest extends WebTestCase
         self::assertSelectorTextContains('body', '0h00');
     }
 
+    #[Test]
+    public function it_jumps_directly_to_the_week_picked_in_the_native_picker(): void
+    {
+        // <input type="week"> soumet un format YYYY-Www.
+        $this->client->request('GET', '/semaine/aller', ['semaine' => '2026-W30']);
+
+        self::assertResponseRedirects('/semaine/2026/30');
+    }
+
+    #[Test]
+    public function an_unreadable_week_value_falls_back_to_the_current_week(): void
+    {
+        $this->client->request('GET', '/semaine/aller', ['semaine' => 'n-importe-quoi']);
+
+        self::assertResponseRedirects('/semaine');
+    }
+
+    #[Test]
+    public function the_picker_is_present_and_prefilled_with_the_displayed_week(): void
+    {
+        $crawler = $this->client->request('GET', '/semaine/2026/30');
+
+        self::assertResponseIsSuccessful();
+        self::assertSame('2026-W30', $crawler->filter('input[name="semaine"]')->attr('value'));
+    }
+
     private function resetSchema(): void
     {
         $connection = $this->entityManager->getConnection();
