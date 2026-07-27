@@ -69,7 +69,7 @@ final class ProjectionControllerTest extends WebTestCase
     private function resetSchema(): void
     {
         $connection = $this->entityManager->getConnection();
-        foreach (['punch_event', 'employer_reading', 'raw_import', 'day_event', 'settings', 'app_user'] as $table) {
+        foreach (['punch_event', 'employer_reading', 'raw_import', 'day_event', 'balance_movement', 'settings', 'app_user'] as $table) {
             $connection->executeStatement('DROP TABLE IF EXISTS '.$table);
         }
 
