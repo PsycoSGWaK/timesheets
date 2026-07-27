@@ -10,12 +10,20 @@ use App\Domain\Day\DayFact;
 use App\Domain\Day\DayPortion;
 use App\Domain\Time\Minutes;
 use App\Entity\DayEvent;
+use App\Entity\Settings;
 use App\Entity\User;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 final class DayEventValorizerTest extends TestCase
 {
+    private Settings $settings;
+
+    protected function setUp(): void
+    {
+        $this->settings = Settings::defaults($this->user());
+    }
+
     #[Test]
     public function a_teletravail_day_without_any_punch_is_valued_at_the_reference_day(): void
     {
@@ -24,7 +32,7 @@ final class DayEventValorizerTest extends TestCase
         $fact = $this->emptyFact();
         $event = DayEvent::declare($this->user(), $this->date(), DayEventCode::Teletravail, DayPortion::Full);
 
-        $valorized = (new DayEventValorizer())->valorize($fact, 0, $event);
+        $valorized = (new DayEventValorizer())->valorize($fact, 0, $event, $this->settings);
 
         self::assertSame(444, $valorized->workedMinutes()->value());
     }
@@ -37,7 +45,7 @@ final class DayEventValorizerTest extends TestCase
         $fact = $this->emptyFact();
         $event = DayEvent::declare($this->user(), $this->date(), DayEventCode::CongePaye, DayPortion::Full);
 
-        $valorized = (new DayEventValorizer())->valorize($fact, 0, $event);
+        $valorized = (new DayEventValorizer())->valorize($fact, 0, $event, $this->settings);
 
         self::assertSame(420, $valorized->workedMinutes()->value());
     }
@@ -48,7 +56,7 @@ final class DayEventValorizerTest extends TestCase
         $fact = $this->emptyFact();
         $event = DayEvent::declare($this->user(), $this->date(), DayEventCode::CongePaye, DayPortion::Half);
 
-        $valorized = (new DayEventValorizer())->valorize($fact, 0, $event);
+        $valorized = (new DayEventValorizer())->valorize($fact, 0, $event, $this->settings);
 
         self::assertSame(210, $valorized->workedMinutes()->value());
     }
@@ -63,7 +71,7 @@ final class DayEventValorizerTest extends TestCase
         $fact = $this->emptyFact();
         $event = DayEvent::declare($this->user(), $this->date(), DayEventCode::Teletravail, DayPortion::Half);
 
-        $valorized = (new DayEventValorizer())->valorize($fact, 0, $event);
+        $valorized = (new DayEventValorizer())->valorize($fact, 0, $event, $this->settings);
 
         self::assertSame(222, $valorized->workedMinutes()->value());
     }
@@ -82,7 +90,7 @@ final class DayEventValorizerTest extends TestCase
         );
         $event = DayEvent::declare($this->user(), $this->date(), DayEventCode::Teletravail, DayPortion::Full);
 
-        $valorized = (new DayEventValorizer())->valorize($fact, 4, $event);
+        $valorized = (new DayEventValorizer())->valorize($fact, 4, $event, $this->settings);
 
         self::assertSame($fact, $valorized);
     }
@@ -92,7 +100,7 @@ final class DayEventValorizerTest extends TestCase
     {
         $fact = $this->emptyFact();
 
-        $valorized = (new DayEventValorizer())->valorize($fact, 0, null);
+        $valorized = (new DayEventValorizer())->valorize($fact, 0, null, $this->settings);
 
         self::assertSame($fact, $valorized);
     }
@@ -103,10 +111,30 @@ final class DayEventValorizerTest extends TestCase
         $fact = $this->emptyFact();
         $event = DayEvent::declare($this->user(), $this->date(), DayEventCode::JourFerie, DayPortion::Full);
 
-        $valorized = (new DayEventValorizer())->valorize($fact, 0, $event);
+        $valorized = (new DayEventValorizer())->valorize($fact, 0, $event, $this->settings);
 
         self::assertSame($fact->date(), $valorized->date());
         self::assertTrue($valorized->isClean());
+    }
+
+    #[Test]
+    public function custom_settings_change_the_valorized_amount(): void
+    {
+        $custom = Settings::defaults($this->user());
+        $custom->update(
+            pauseMinimale: 30,
+            fenetreDebut: 11 * 60 + 30,
+            fenetreFin: 14 * 60,
+            journeeReferenceContractuelle: 6 * 60 + 30,
+            journeeReferenceEffective: 7 * 60 + 24,
+            rttMax: 2 * 60,
+        );
+        $fact = $this->emptyFact();
+        $event = DayEvent::declare($this->user(), $this->date(), DayEventCode::CongePaye, DayPortion::Full);
+
+        $valorized = (new DayEventValorizer())->valorize($fact, 0, $event, $custom);
+
+        self::assertSame(6 * 60 + 30, $valorized->workedMinutes()->value());
     }
 
     private function emptyFact(): DayFact

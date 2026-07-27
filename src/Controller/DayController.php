@@ -8,8 +8,10 @@ use App\Domain\Projection\LeaveEstimate;
 use App\Domain\Projection\LeaveTimeCalculator;
 use App\Domain\Time\Minutes;
 use App\Entity\PunchEvent;
+use App\Entity\Settings;
 use App\Entity\User;
 use App\Repository\PunchEventRepository;
+use App\Repository\SettingsRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -36,6 +38,7 @@ final class DayController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly PunchEventRepository $punches,
+        private readonly SettingsRepository $settingsRepository,
         private readonly LeaveTimeCalculator $leaveTimeCalculator,
     ) {
     }
@@ -49,7 +52,7 @@ final class DayController extends AbstractController
         return $this->render('day/index.html.twig', [
             'date' => $day,
             'slots' => $this->slots($byRang),
-            'estimate' => $this->estimate($byRang),
+            'estimate' => $this->estimate($byRang, $this->settingsRepository->forUser($user)),
         ]);
     }
 
@@ -159,7 +162,7 @@ final class DayController extends AbstractController
     /**
      * @param array<int, PunchEvent> $byRang
      */
-    private function estimate(array $byRang): ?LeaveEstimate
+    private function estimate(array $byRang, Settings $settings): ?LeaveEstimate
     {
         if (!isset($byRang[1], $byRang[2], $byRang[3])) {
             return null;
@@ -169,6 +172,7 @@ final class DayController extends AbstractController
             $byRang[1]->time(),
             $byRang[2]->time(),
             $byRang[3]->time(),
+            $settings,
         );
     }
 }

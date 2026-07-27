@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Repository\DayEventRepository;
 use App\Repository\EmployerReadingRepository;
 use App\Repository\PunchEventRepository;
+use App\Repository\SettingsRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -27,6 +28,7 @@ final class WeekController extends AbstractController
         private readonly PunchEventRepository $punches,
         private readonly EmployerReadingRepository $readings,
         private readonly DayEventRepository $events,
+        private readonly SettingsRepository $settingsRepository,
         private readonly WorkWeekAssembler $assembler,
         private readonly WeekProjectionCalculator $projectionCalculator,
         private readonly ClockInterface $clock,
@@ -74,6 +76,7 @@ final class WeekController extends AbstractController
         }
 
         $today = $this->today();
+        $settings = $this->settingsRepository->forUser($user);
 
         $workWeek = $this->assembler->assemble(
             $dates,
@@ -81,11 +84,13 @@ final class WeekController extends AbstractController
             $this->readings->latestMinutesByDates($user, $dates),
             $this->events->findByDates($user, $dates),
             $today,
+            $settings,
         );
 
         $projection = $this->projectionCalculator->project(
             $workWeek->weekFact()->workedMinutes(),
             $this->countRemainingWorkingDays($dates, $today),
+            $settings,
         );
 
         $previous = $monday->modify('-7 days');

@@ -6,11 +6,20 @@ namespace App\Tests\Domain\Projection;
 
 use App\Domain\Projection\LeaveTimeCalculator;
 use App\Domain\Time\Minutes;
+use App\Entity\Settings;
+use App\Entity\User;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 final class LeaveTimeCalculatorTest extends TestCase
 {
+    private Settings $settings;
+
+    protected function setUp(): void
+    {
+        $this->settings = Settings::defaults(User::register('guillaume@example.com', 'hashed-password'));
+    }
+
     #[Test]
     public function it_reproduces_the_specification_example(): void
     {
@@ -20,6 +29,7 @@ final class LeaveTimeCalculatorTest extends TestCase
             Minutes::fromClock('08:48'),
             Minutes::fromClock('11:47'),
             Minutes::fromClock('12:13'),
+            $this->settings,
         );
 
         self::assertSame('16:42', $estimate->expectedLeave()->toClock());
@@ -36,6 +46,7 @@ final class LeaveTimeCalculatorTest extends TestCase
             Minutes::fromClock('08:30'),
             Minutes::fromClock('12:00'),
             Minutes::fromClock('12:45'),
+            $this->settings,
         );
 
         self::assertSame(0, $estimate->breakPenalty()->value());
@@ -50,6 +61,7 @@ final class LeaveTimeCalculatorTest extends TestCase
             Minutes::fromClock('08:30'),
             Minutes::fromClock('12:00'),
             Minutes::fromClock('12:30'),
+            $this->settings,
         );
 
         self::assertSame(0, $estimate->breakPenalty()->value());
@@ -63,6 +75,7 @@ final class LeaveTimeCalculatorTest extends TestCase
             Minutes::fromClock('08:30'),
             Minutes::fromClock('12:00'),
             Minutes::fromClock('12:20'),
+            $this->settings,
         );
 
         self::assertSame(10, $estimate->breakPenalty()->value());
@@ -71,13 +84,14 @@ final class LeaveTimeCalculatorTest extends TestCase
     }
 
     #[Test]
-    public function the_objective_is_adjustable(): void
+    public function the_objective_can_be_overridden_explicitly(): void
     {
-        // Objectif ramené à 7 h : la sortie avance de 24 min par rapport au défaut.
+        // Objectif ramené à 7 h pour cette seule estimation : la sortie avance de 24 min.
         $estimate = (new LeaveTimeCalculator())->estimate(
             Minutes::fromClock('08:30'),
             Minutes::fromClock('12:00'),
             Minutes::fromClock('12:45'),
+            $this->settings,
             Minutes::fromHoursAndMinutes(7, 0),
         );
 
@@ -87,14 +101,39 @@ final class LeaveTimeCalculatorTest extends TestCase
     }
 
     #[Test]
-    public function the_default_objective_is_seven_hours_twenty_four(): void
+    public function the_default_objective_comes_from_settings(): void
     {
         $estimate = (new LeaveTimeCalculator())->estimate(
             Minutes::fromClock('08:30'),
             Minutes::fromClock('12:00'),
             Minutes::fromClock('12:45'),
+            $this->settings,
         );
 
         self::assertSame(444, $estimate->objective()->value());
+    }
+
+    #[Test]
+    public function custom_settings_change_the_default_objective_and_break_threshold(): void
+    {
+        $custom = Settings::defaults(User::register('alice@example.com', 'hashed-password'));
+        $custom->update(
+            pauseMinimale: 20,
+            fenetreDebut: 11 * 60 + 30,
+            fenetreFin: 14 * 60,
+            journeeReferenceContractuelle: 7 * 60,
+            journeeReferenceEffective: 7 * 60,
+            rttMax: 2 * 60,
+        );
+
+        $estimate = (new LeaveTimeCalculator())->estimate(
+            Minutes::fromClock('08:30'),
+            Minutes::fromClock('12:00'),
+            Minutes::fromClock('12:26'), // pause de 26 min, sous les 20 min de $custom : aucune pénalité
+            $custom,
+        );
+
+        self::assertSame(420, $estimate->objective()->value());
+        self::assertSame(0, $estimate->breakPenalty()->value());
     }
 }

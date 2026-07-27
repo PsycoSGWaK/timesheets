@@ -6,6 +6,7 @@ namespace App\Domain\Day;
 
 use App\Domain\Time\Minutes;
 use App\Entity\PunchEvent;
+use App\Entity\Settings;
 
 /**
  * Recalcule une journée à partir de ses pointages, indépendamment d'ADP.
@@ -14,17 +15,12 @@ use App\Entity\PunchEvent;
  * l'ordre chronologique de badgeage, jamais un tri à l'horloge : c'est ce qui permet
  * de repérer un intervalle dont la fin précède le début (défaut #4 du proto).
  *
- * Les seuils appliqués ici (pause minimale, fenêtre autorisée) sont ceux du
- * paramétrage 2025 ; ils ont vocation à devenir configurables quand l'entité de
- * paramétrage existera.
+ * Les seuils appliqués (pause minimale, fenêtre autorisée) viennent du paramétrage
+ * de l'utilisateur ({@see Settings}), plus des constantes en dur.
  */
 final class DailyCalculator
 {
-    private const PAUSE_MINIMALE = 30;
-    private const FENETRE_DEBUT = 11 * 60 + 30; // 11h30
-    private const FENETRE_FIN = 14 * 60;        // 14h00
-
-    public function calculate(\DateTimeImmutable $date, PunchEvent ...$punches): DayFact
+    public function calculate(\DateTimeImmutable $date, Settings $settings, PunchEvent ...$punches): DayFact
     {
         usort($punches, static fn (PunchEvent $a, PunchEvent $b): int => $a->rang() <=> $b->rang());
 
@@ -59,13 +55,14 @@ final class DailyCalculator
             if (!$duration->isNegative()) {
                 $breakDuration = $duration;
 
-                if ($breakStart->value() < self::FENETRE_DEBUT || $breakEnd->value() > self::FENETRE_FIN) {
+                if ($breakStart->value() < $settings->fenetreDebut()->value()
+                    || $breakEnd->value() > $settings->fenetreFin()->value()) {
                     $anomalies[DailyAnomaly::PauseHorsFenetre->value] = DailyAnomaly::PauseHorsFenetre;
                 }
 
-                if ($duration->value() < self::PAUSE_MINIMALE) {
+                if ($duration->value() < $settings->pauseMinimale()->value()) {
                     $anomalies[DailyAnomaly::PauseTropCourte->value] = DailyAnomaly::PauseTropCourte;
-                    $penalty = Minutes::of(self::PAUSE_MINIMALE)->minus($duration)->clampToZero();
+                    $penalty = $settings->pauseMinimale()->minus($duration)->clampToZero();
                 }
             }
         }

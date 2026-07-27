@@ -8,11 +8,20 @@ use App\Domain\Day\DayFact;
 use App\Domain\Time\Minutes;
 use App\Domain\Week\WeeklyCalculator;
 use App\Domain\Week\WeekFact;
+use App\Entity\Settings;
+use App\Entity\User;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 final class WeeklyCalculatorTest extends TestCase
 {
+    private Settings $settings;
+
+    protected function setUp(): void
+    {
+        $this->settings = Settings::defaults(User::register('guillaume@example.com', 'hashed-password'));
+    }
+
     #[Test]
     public function it_sums_the_worked_time_of_the_week(): void
     {
@@ -98,7 +107,7 @@ final class WeeklyCalculatorTest extends TestCase
     #[Test]
     public function an_empty_week_is_all_zeros(): void
     {
-        $week = (new WeeklyCalculator())->aggregate();
+        $week = (new WeeklyCalculator())->aggregate($this->settings);
 
         self::assertSame(0, $week->workedMinutes()->value());
         self::assertSame(0, $week->rttAcquired()->value());
@@ -145,6 +154,35 @@ final class WeeklyCalculatorTest extends TestCase
         ]);
     }
 
+    #[Test]
+    public function custom_reference_days_change_the_weekly_thresholds(): void
+    {
+        // Journées de référence ramenées à 6h30/6h50 : les seuils hebdo suivent (x5).
+        $custom = Settings::defaults(User::register('alice@example.com', 'hashed-password'));
+        $custom->update(
+            pauseMinimale: 30,
+            fenetreDebut: 11 * 60 + 30,
+            fenetreFin: 14 * 60,
+            journeeReferenceContractuelle: 6 * 60 + 30,
+            journeeReferenceEffective: 6 * 60 + 50,
+            rttMax: 2 * 60,
+        );
+
+        // 5 jours à 6h50 = 34h10 : au-dessus du seuil 32h30, sous la bascule 34h10.
+        $week = (new WeeklyCalculator())->aggregate(
+            $custom,
+            $this->dayFact('2026-07-20', 6 * 60 + 50),
+            $this->dayFact('2026-07-21', 6 * 60 + 50),
+            $this->dayFact('2026-07-22', 6 * 60 + 50),
+            $this->dayFact('2026-07-23', 6 * 60 + 50),
+            $this->dayFact('2026-07-24', 6 * 60 + 50),
+        );
+
+        self::assertSame(32 * 60 + 30, $custom->weeklyReference()->value());
+        self::assertSame(34 * 60 + 10, $custom->weeklyBascule()->value());
+        self::assertSame(100, $week->rttAcquired()->value()); // 34h10 - 32h30 = 1h40, sous le plafond 2h
+    }
+
     /**
      * @param array<string, int> $workedByDate date ISO => minutes travaillées
      */
@@ -155,7 +193,7 @@ final class WeeklyCalculatorTest extends TestCase
             $days[] = $this->dayFact($date, $worked);
         }
 
-        return (new WeeklyCalculator())->aggregate(...$days);
+        return (new WeeklyCalculator())->aggregate($this->settings, ...$days);
     }
 
     private function dayFact(string $date, int $worked): DayFact
