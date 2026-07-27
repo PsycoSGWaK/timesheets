@@ -224,25 +224,29 @@
                     <td>
                         {% if day.event %}
                             <span class="event-badge">
-                                {{ day.event.code.label }}
+                                {{ day.event.code.label }}{% if day.event.half %} — {{ day.event.half.label }}{% endif %}
                                 <form method="post" action="{{ path('day_event_remove') }}">
                                     <input type="hidden" name="date" value="{{ day.date|date('Y-m-d') }}">
                                     <button type="submit" title="Retirer">×</button>
                                 </form>
                             </span>
                         {% else %}
-                            <form class="event-form" method="post" action="{{ path('day_event_declare') }}">
+                            <form class="event-form" method="post" action="{{ path('day_event_declare') }}" data-controller="day-event">
                                 <input type="hidden" name="date" value="{{ day.date|date('Y-m-d') }}">
-                                <select name="code">
+                                <select name="code" data-action="change->day-event#update">
                                     <option value="TT">Télétravail</option>
                                     <option value="CP">Congé payé</option>
                                     <option value="CA">Congé ancienneté</option>
                                     <option value="RTT">RTT posé</option>
                                     <option value="JF">Jour férié</option>
                                 </select>
-                                <select name="portion">
+                                <select name="portion" data-action="change->day-event#update">
                                     <option value="full">1 j</option>
                                     <option value="half">0,5 j</option>
+                                </select>
+                                <select name="half" data-day-event-target="half" hidden>
+                                    <option value="matin">Matin</option>
+                                    <option value="apres_midi">Après-midi</option>
                                 </select>
                                 <button type="submit">Ajouter</button>
                             </form>

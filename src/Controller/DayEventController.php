@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Domain\Balance\BalanceCounter;
 use App\Domain\Day\DayEventCode;
+use App\Domain\Day\DayHalf;
 use App\Domain\Day\DayPortion;
 use App\Domain\Time\Minutes;
 use App\Entity\BalanceMovement;
@@ -48,6 +49,12 @@ final class DayEventController extends AbstractController
         $date = new \DateTimeImmutable((string) $request->request->get('date'));
         $code = DayEventCode::from((string) $request->request->get('code'));
         $portion = DayPortion::from((string) $request->request->get('portion', DayPortion::Full->value));
+        // Matin/après-midi n'a de sens que pour un TT en demi-journée (règle
+        // précise du 28/07/2026) ; sans quoi la valorisation retombe sur la simple
+        // moitié de la référence, comme pour les autres codes.
+        $half = DayEventCode::Teletravail === $code && DayPortion::Half === $portion
+            ? DayHalf::from((string) $request->request->get('half', DayHalf::Matin->value))
+            : null;
 
         $existing = $this->events->findOneByDate($user, $date);
         if (null !== $existing) {
@@ -60,7 +67,7 @@ final class DayEventController extends AbstractController
             $this->entityManager->flush();
         }
 
-        $this->entityManager->persist(DayEvent::declare($user, $date, $code, $portion));
+        $this->entityManager->persist(DayEvent::declare($user, $date, $code, $portion, $half));
 
         if (DayEventCode::Rtt === $code) {
             $settings = $this->settingsRepository->forUser($user);

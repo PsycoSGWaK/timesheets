@@ -89,6 +89,7 @@ final class WeekProjectionCalculatorTest extends TestCase
             journeeReferenceContractuelle: 7 * 60,
             journeeReferenceEffective: 7 * 60, // journée effective = contractuelle -> bascule 35h
             rttMax: 2 * 60,
+            finApresMidiTeletravail: 16 * 60,
         );
 
         $projection = (new WeekProjectionCalculator())->project(Minutes::of(2000), 0, $custom);

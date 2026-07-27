@@ -53,6 +53,29 @@ final class DayEventControllerTest extends WebTestCase
     }
 
     #[Test]
+    public function it_declares_a_teletravail_morning_half_day_using_times_entered_beforehand(): void
+    {
+        // Horaires saisis via /jour/{date} avant l'événement (règle précise du
+        // 28/07/2026) : arrivée 08:30, retour de pause 12:30 -> 4h de travail.
+        $this->client->request('POST', '/jour/2026-07-24', [
+            'matin' => '08:30',
+            'apres_midi' => '12:30',
+        ]);
+
+        $this->client->request('POST', '/semaine/evenement', [
+            'date' => '2026-07-24',
+            'code' => 'TT',
+            'portion' => 'half',
+            'half' => 'matin',
+        ]);
+
+        self::assertResponseRedirects();
+        $this->client->followRedirect();
+
+        self::assertSelectorTextContains('body', '4h00');
+    }
+
+    #[Test]
     public function it_replaces_an_existing_event_on_the_same_day(): void
     {
         $this->client->request('POST', '/semaine/evenement', [

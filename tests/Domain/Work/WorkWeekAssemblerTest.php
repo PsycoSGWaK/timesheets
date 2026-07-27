@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Domain\Work;
 
 use App\Domain\Day\DayEventCode;
+use App\Domain\Day\DayHalf;
+use App\Domain\Day\DayPortion;
 use App\Domain\Reconciliation\ReconciliationStatus;
 use App\Domain\Time\Minutes;
 use App\Domain\Work\WorkWeek;
@@ -106,6 +108,31 @@ final class WorkWeekAssemblerTest extends TestCase
         $friday = $week->days()[4];
         self::assertSame(444, $friday->dayFact()->workedMinutes()->value());
         self::assertSame(DayEventCode::Teletravail, $friday->event()?->code());
+    }
+
+    #[Test]
+    public function a_teletravail_half_day_uses_the_provisional_times_entered_for_that_day(): void
+    {
+        // Vendredi 24/07 : TT demi-journée matin, horaires saisis via /jour/{date}
+        // avant tout pointage réel (règle précise du 28/07/2026).
+        $events = [
+            '2026-07-24' => DayEvent::declare(
+                $this->user,
+                new \DateTimeImmutable('2026-07-24'),
+                DayEventCode::Teletravail,
+                DayPortion::Half,
+                DayHalf::Matin,
+            ),
+        ];
+        $punches = [
+            PunchEvent::provisional($this->user, new \DateTimeImmutable('2026-07-24'), Minutes::fromClock('08:30'), 1),
+            PunchEvent::provisional($this->user, new \DateTimeImmutable('2026-07-24'), Minutes::fromClock('12:30'), 3),
+        ];
+
+        $week = $this->assemble($punches, [], $events);
+
+        $friday = $week->days()[4];
+        self::assertSame(240, $friday->dayFact()->workedMinutes()->value()); // 08:30 -> 12:30
     }
 
     #[Test]

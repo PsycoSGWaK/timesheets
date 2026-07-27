@@ -44,6 +44,7 @@ final class SettingsControllerTest extends WebTestCase
         self::assertSame('07:00', $crawler->filter('input[name="journee_reference_contractuelle"]')->attr('value'));
         self::assertSame('07:24', $crawler->filter('input[name="journee_reference_effective"]')->attr('value'));
         self::assertSame('02:00', $crawler->filter('input[name="rtt_max"]')->attr('value'));
+        self::assertSame('16:00', $crawler->filter('input[name="fin_apres_midi_teletravail"]')->attr('value'));
     }
 
     #[Test]
@@ -56,6 +57,7 @@ final class SettingsControllerTest extends WebTestCase
             'journee_reference_contractuelle' => '07:00',
             'journee_reference_effective' => '07:00',
             'rtt_max' => '03:00',
+            'fin_apres_midi_teletravail' => '16:00',
         ]);
 
         self::assertResponseRedirects('/parametres');
@@ -76,10 +78,12 @@ final class SettingsControllerTest extends WebTestCase
         $this->client->request('POST', '/parametres', [
             'pause_minimale' => '00:20', 'fenetre_debut' => '11:00', 'fenetre_fin' => '15:00',
             'journee_reference_contractuelle' => '07:00', 'journee_reference_effective' => '07:00', 'rtt_max' => '03:00',
+            'fin_apres_midi_teletravail' => '16:00',
         ]);
         $this->client->request('POST', '/parametres', [
             'pause_minimale' => '00:15', 'fenetre_debut' => '11:00', 'fenetre_fin' => '15:00',
             'journee_reference_contractuelle' => '07:00', 'journee_reference_effective' => '07:00', 'rtt_max' => '03:00',
+            'fin_apres_midi_teletravail' => '16:00',
         ]);
 
         self::assertSame(1, $this->entityManager->getRepository(Settings::class)->count([]));
@@ -94,6 +98,7 @@ final class SettingsControllerTest extends WebTestCase
         $this->client->request('POST', '/parametres', [
             'pause_minimale' => '00:30', 'fenetre_debut' => '15:00', 'fenetre_fin' => '11:00',
             'journee_reference_contractuelle' => '07:00', 'journee_reference_effective' => '07:24', 'rtt_max' => '02:00',
+            'fin_apres_midi_teletravail' => '16:00',
         ]);
 
         self::assertResponseIsSuccessful();

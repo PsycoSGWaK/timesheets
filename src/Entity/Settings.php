@@ -56,6 +56,9 @@ final class Settings
     #[ORM\Column(type: 'integer')]
     private int $rttMax;
 
+    #[ORM\Column(type: 'integer')]
+    private int $finApresMidiTeletravail;
+
     private function __construct(
         User $user,
         int $pauseMinimale,
@@ -64,6 +67,7 @@ final class Settings
         int $journeeReferenceContractuelle,
         int $journeeReferenceEffective,
         int $rttMax,
+        int $finApresMidiTeletravail,
     ) {
         $this->user = $user;
         $this->applyAndValidate(
@@ -73,6 +77,7 @@ final class Settings
             $journeeReferenceContractuelle,
             $journeeReferenceEffective,
             $rttMax,
+            $finApresMidiTeletravail,
         );
     }
 
@@ -80,6 +85,7 @@ final class Settings
      * Les valeurs jusqu'ici en dur dans les calculateurs (spec §3, confirmées par
      * Guillaume le 27/07/2026) : pause 30 min, fenêtre 11h30-14h00, journée
      * contractuelle 7h00, journée effective 7h24, RTT plafonné à 2h/semaine.
+     * Fin de demi-journée TT après-midi à 16h00, confirmée le 28/07/2026.
      */
     public static function defaults(User $user): self
     {
@@ -91,6 +97,7 @@ final class Settings
             journeeReferenceContractuelle: 7 * 60,
             journeeReferenceEffective: 7 * 60 + 24,
             rttMax: 2 * 60,
+            finApresMidiTeletravail: 16 * 60,
         );
     }
 
@@ -101,6 +108,7 @@ final class Settings
         int $journeeReferenceContractuelle,
         int $journeeReferenceEffective,
         int $rttMax,
+        int $finApresMidiTeletravail,
     ): void {
         $this->applyAndValidate(
             $pauseMinimale,
@@ -109,6 +117,7 @@ final class Settings
             $journeeReferenceContractuelle,
             $journeeReferenceEffective,
             $rttMax,
+            $finApresMidiTeletravail,
         );
     }
 
@@ -119,6 +128,7 @@ final class Settings
         int $journeeReferenceContractuelle,
         int $journeeReferenceEffective,
         int $rttMax,
+        int $finApresMidiTeletravail,
     ): void {
         foreach ([
             'pauseMinimale' => $pauseMinimale,
@@ -127,6 +137,7 @@ final class Settings
             'journeeReferenceContractuelle' => $journeeReferenceContractuelle,
             'journeeReferenceEffective' => $journeeReferenceEffective,
             'rttMax' => $rttMax,
+            'finApresMidiTeletravail' => $finApresMidiTeletravail,
         ] as $name => $value) {
             if ($value < 0) {
                 throw new \InvalidArgumentException(sprintf('%s ne peut être négatif, reçu %d.', $name, $value));
@@ -137,12 +148,19 @@ final class Settings
             throw new \InvalidArgumentException('La fenêtre de pause doit se terminer après avoir commencé.');
         }
 
+        if ($finApresMidiTeletravail <= $fenetreDebut) {
+            throw new \InvalidArgumentException(
+                'La fin de demi-journée TT après-midi doit rester après le début de la fenêtre de pause.',
+            );
+        }
+
         $this->pauseMinimale = $pauseMinimale;
         $this->fenetreDebut = $fenetreDebut;
         $this->fenetreFin = $fenetreFin;
         $this->journeeReferenceContractuelle = $journeeReferenceContractuelle;
         $this->journeeReferenceEffective = $journeeReferenceEffective;
         $this->rttMax = $rttMax;
+        $this->finApresMidiTeletravail = $finApresMidiTeletravail;
     }
 
     public function id(): ?int
@@ -183,6 +201,11 @@ final class Settings
     public function rttMax(): Minutes
     {
         return Minutes::of($this->rttMax);
+    }
+
+    public function finApresMidiTeletravail(): Minutes
+    {
+        return Minutes::of($this->finApresMidiTeletravail);
     }
 
     /** 35h = journée contractuelle × 5 jours ouvrés. */
