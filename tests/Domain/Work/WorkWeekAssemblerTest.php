@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tests\Domain\Work;
 
+use App\Domain\Day\DayEventCode;
 use App\Domain\Reconciliation\ReconciliationStatus;
 use App\Domain\Time\Minutes;
 use App\Domain\Work\WorkWeek;
 use App\Domain\Work\WorkWeekAssembler;
+use App\Entity\DayEvent;
 use App\Entity\PunchEvent;
 use App\Entity\User;
 use PHPUnit\Framework\Attributes\Test;
@@ -88,11 +90,35 @@ final class WorkWeekAssemblerTest extends TestCase
         self::assertSame(ReconciliationStatus::NoReading, $wednesday->reconciliation()->status());
     }
 
+    #[Test]
+    public function a_teletravail_day_without_any_punch_is_valued_and_labelled(): void
+    {
+        // Vendredi 24/07 : télétravail sans badge, spec §6.5.
+        $events = [
+            '2026-07-24' => DayEvent::declare($this->user, new \DateTimeImmutable('2026-07-24'), DayEventCode::Teletravail),
+        ];
+
+        $week = $this->assemble([], [], $events);
+
+        $friday = $week->days()[4];
+        self::assertSame(444, $friday->dayFact()->workedMinutes()->value());
+        self::assertSame(DayEventCode::Teletravail, $friday->event()?->code());
+    }
+
+    #[Test]
+    public function a_day_without_any_event_exposes_none(): void
+    {
+        $week = $this->assemble([], []);
+
+        self::assertNull($week->days()[0]->event());
+    }
+
     /**
-     * @param list<PunchEvent>      $punches
+     * @param list<PunchEvent>       $punches
      * @param array<string, Minutes> $readings
+     * @param array<string, DayEvent> $events
      */
-    private function assemble(array $punches, array $readings): WorkWeek
+    private function assemble(array $punches, array $readings, array $events = []): WorkWeek
     {
         $dates = [];
         for ($i = 0; $i < 7; ++$i) {
@@ -103,7 +129,8 @@ final class WorkWeekAssemblerTest extends TestCase
             new \App\Domain\Day\DailyCalculator(),
             new \App\Domain\Week\WeeklyCalculator(),
             new \App\Domain\Reconciliation\ReconciliationDetector(),
-        ))->assemble($dates, $punches, $readings, new \DateTimeImmutable(self::TODAY));
+            new \App\Domain\Day\DayEventValorizer(),
+        ))->assemble($dates, $punches, $readings, $events, new \DateTimeImmutable(self::TODAY));
     }
 
     /**

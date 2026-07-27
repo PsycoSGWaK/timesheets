@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Domain\Projection\WeekProjectionCalculator;
 use App\Domain\Work\WorkWeekAssembler;
 use App\Entity\User;
+use App\Repository\DayEventRepository;
 use App\Repository\EmployerReadingRepository;
 use App\Repository\PunchEventRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -23,6 +24,7 @@ final class WeekController extends AbstractController
     public function __construct(
         private readonly PunchEventRepository $punches,
         private readonly EmployerReadingRepository $readings,
+        private readonly DayEventRepository $events,
         private readonly WorkWeekAssembler $assembler,
         private readonly WeekProjectionCalculator $projectionCalculator,
     ) {
@@ -57,6 +59,7 @@ final class WeekController extends AbstractController
             $dates,
             $this->punches->findByDates($user, $dates),
             $this->readings->latestMinutesByDates($user, $dates),
+            $this->events->findByDates($user, $dates),
             $today,
         );
 
