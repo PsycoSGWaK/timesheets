@@ -11,6 +11,7 @@ use App\Repository\DayEventRepository;
 use App\Repository\EmployerReadingRepository;
 use App\Repository\PunchEventRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
@@ -42,6 +43,23 @@ final class WeekController extends AbstractController
     public function week(int $year, int $week, #[CurrentUser] User $user): Response
     {
         return $this->renderWeek($user, $year, $week);
+    }
+
+    /**
+     * Cible du sélecteur natif <input type="week"> (spec §2, sélection de semaine
+     * plus rapide qu'un défilement précédent/suivant). Une valeur illisible ramène
+     * simplement à la semaine courante plutôt que d'échouer.
+     */
+    #[Route('/semaine/aller', name: 'week_goto', methods: ['GET'])]
+    public function goto(Request $request): Response
+    {
+        $value = (string) $request->query->get('semaine', '');
+
+        if (1 === preg_match('/^(\d{4})-W(\d{2})$/', $value, $matches)) {
+            return $this->redirectToRoute('week', ['year' => (int) $matches[1], 'week' => (int) $matches[2]]);
+        }
+
+        return $this->redirectToRoute('week_current');
     }
 
     private function renderWeek(User $user, int $year, int $week): Response
@@ -79,6 +97,7 @@ final class WeekController extends AbstractController
             'sunday' => $monday->modify('+6 days'),
             'previous' => ['year' => (int) $previous->format('o'), 'week' => (int) $previous->format('W')],
             'next' => ['year' => (int) $next->format('o'), 'week' => (int) $next->format('W')],
+            'pickerValue' => sprintf('%04d-W%02d', $year, $week),
         ]);
     }
 
