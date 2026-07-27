@@ -80,7 +80,7 @@ final class AdpImporterTest extends KernelTestCase
     private function resetSchema(): void
     {
         $connection = $this->entityManager->getConnection();
-        foreach (['punch_event', 'employer_reading', 'raw_import'] as $table) {
+        foreach (['punch_event', 'employer_reading', 'raw_import', 'app_user'] as $table) {
             $connection->executeStatement('DROP TABLE IF EXISTS '.$table);
         }
 
