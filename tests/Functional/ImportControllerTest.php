@@ -82,7 +82,7 @@ final class ImportControllerTest extends WebTestCase
     private function resetSchema(): void
     {
         $connection = $this->entityManager->getConnection();
-        foreach (['punch_event', 'employer_reading', 'raw_import', 'day_event', 'app_user'] as $table) {
+        foreach (['punch_event', 'employer_reading', 'raw_import', 'day_event', 'settings', 'app_user'] as $table) {
             $connection->executeStatement('DROP TABLE IF EXISTS '.$table);
         }
 
