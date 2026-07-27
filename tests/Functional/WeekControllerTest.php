@@ -12,6 +12,8 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 final class WeekControllerTest extends WebTestCase
 {
+    use LogsInAUser;
+
     private KernelBrowser $client;
     private EntityManagerInterface $entityManager;
 
@@ -26,6 +28,7 @@ final class WeekControllerTest extends WebTestCase
         $this->entityManager = $entityManager;
 
         $this->resetSchema();
+        $this->logIn($this->client, $this->entityManager);
     }
 
     #[Test]
@@ -62,7 +65,7 @@ final class WeekControllerTest extends WebTestCase
     private function resetSchema(): void
     {
         $connection = $this->entityManager->getConnection();
-        foreach (['punch_event', 'employer_reading', 'raw_import'] as $table) {
+        foreach (['punch_event', 'employer_reading', 'raw_import', 'app_user'] as $table) {
             $connection->executeStatement('DROP TABLE IF EXISTS '.$table);
         }
 

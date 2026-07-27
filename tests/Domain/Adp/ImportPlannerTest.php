@@ -12,12 +12,20 @@ use App\Domain\Punch\PunchNature;
 use App\Domain\Punch\PunchOrigin;
 use App\Domain\Time\Minutes;
 use App\Entity\PunchEvent;
+use App\Entity\User;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 final class ImportPlannerTest extends TestCase
 {
     private const OBSERVED = '2026-07-24 03:12:00';
+
+    private User $user;
+
+    protected function setUp(): void
+    {
+        $this->user = User::register('guillaume@example.com', 'hashed-password');
+    }
 
     #[Test]
     public function a_fresh_day_yields_one_reading_and_all_its_punches(): void
@@ -159,6 +167,7 @@ final class ImportPlannerTest extends TestCase
     private function plan(ParsedWeek $week, array $existingPunchesByDate = []): ImportPlan
     {
         return (new ImportPlanner())->plan(
+            $this->user,
             $week,
             new \DateTimeImmutable(self::OBSERVED),
             $existingPunchesByDate,
@@ -185,11 +194,11 @@ final class ImportPlannerTest extends TestCase
 
     private function real(string $date, string $clock, int $rang): PunchEvent
     {
-        return PunchEvent::realFromAdp(new \DateTimeImmutable($date), Minutes::fromClock($clock), $rang);
+        return PunchEvent::realFromAdp($this->user, new \DateTimeImmutable($date), Minutes::fromClock($clock), $rang);
     }
 
     private function provisional(string $date, string $clock, int $rang): PunchEvent
     {
-        return PunchEvent::provisional(new \DateTimeImmutable($date), Minutes::fromClock($clock), $rang);
+        return PunchEvent::provisional($this->user, new \DateTimeImmutable($date), Minutes::fromClock($clock), $rang);
     }
 }

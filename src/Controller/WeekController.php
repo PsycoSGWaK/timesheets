@@ -6,11 +6,13 @@ namespace App\Controller;
 
 use App\Domain\Projection\WeekProjectionCalculator;
 use App\Domain\Work\WorkWeekAssembler;
+use App\Entity\User;
 use App\Repository\EmployerReadingRepository;
 use App\Repository\PunchEventRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 /**
  * Affiche une semaine : notre recalcul face au relevé d'ADP, jour par jour, plus
@@ -27,20 +29,20 @@ final class WeekController extends AbstractController
     }
 
     #[Route('/semaine', name: 'week_current', methods: ['GET'])]
-    public function currentWeek(): Response
+    public function currentWeek(#[CurrentUser] User $user): Response
     {
         $today = new \DateTimeImmutable('today');
 
-        return $this->renderWeek((int) $today->format('o'), (int) $today->format('W'));
+        return $this->renderWeek($user, (int) $today->format('o'), (int) $today->format('W'));
     }
 
     #[Route('/semaine/{year}/{week}', name: 'week', requirements: ['year' => '\d{4}', 'week' => '\d{1,2}'], methods: ['GET'])]
-    public function week(int $year, int $week): Response
+    public function week(int $year, int $week, #[CurrentUser] User $user): Response
     {
-        return $this->renderWeek($year, $week);
+        return $this->renderWeek($user, $year, $week);
     }
 
-    private function renderWeek(int $year, int $week): Response
+    private function renderWeek(User $user, int $year, int $week): Response
     {
         $monday = (new \DateTimeImmutable())->setISODate($year, $week)->setTime(0, 0, 0);
 
@@ -53,8 +55,8 @@ final class WeekController extends AbstractController
 
         $workWeek = $this->assembler->assemble(
             $dates,
-            $this->punches->findByDates($dates),
-            $this->readings->latestMinutesByDates($dates),
+            $this->punches->findByDates($user, $dates),
+            $this->readings->latestMinutesByDates($user, $dates),
             $today,
         );
 

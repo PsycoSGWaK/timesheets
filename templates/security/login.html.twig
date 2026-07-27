@@ -1,0 +1,51 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Connexion{% endblock %}
+
+{% block stylesheets %}
+<style>
+    main {
+        max-width: 380px; margin: 4rem auto; padding: 0 1.25rem;
+    }
+    h1 { font-size: 1.4rem; margin-bottom: 1.5rem; }
+    label { display: block; font-weight: 600; margin: .9rem 0 .3rem; color: var(--text-primary); }
+    input {
+        width: 100%; box-sizing: border-box;
+        background: var(--surface-card); color: var(--text-primary);
+        border: 1px solid var(--gridline); border-radius: 8px;
+        padding: .55rem .6rem; font: inherit;
+    }
+    input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    button {
+        margin-top: 1.2rem; width: 100%; padding: .6rem 1.2rem; border: 0; border-radius: 8px;
+        background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 600; cursor: pointer;
+    }
+    button:hover { filter: brightness(1.08); }
+    .error {
+        background: var(--status-critical-bg); color: var(--status-critical);
+        padding: .75rem 1rem; border-radius: 8px; font-weight: 600; margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<main>
+    <h1>Connexion</h1>
+
+    {% if error %}
+        <p class="error">Email ou mot de passe incorrect.</p>
+    {% endif %}
+
+    <form method="post" action="{{ path('login') }}">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" value="{{ lastEmail }}" required autofocus>
+
+        <label for="password">Mot de passe</label>
+        <input type="password" id="password" name="password" required>
+
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+        <button type="submit">Se connecter</button>
+    </form>
+</main>
+{% endblock %}

@@ -9,6 +9,7 @@ use App\Domain\Adp\ImportPlanner;
 use App\Entity\EmployerReading;
 use App\Entity\PunchEvent;
 use App\Entity\RawImport;
+use App\Entity\User;
 use App\Import\AdpImporter;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
@@ -17,12 +18,13 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
  * Valide l'import de bout en bout contre une vraie base : c'est le seul moyen de
- * prouver l'idempotence, qui repose sur la contrainte d'unicité (date, heure, rang).
+ * prouver l'idempotence, qui repose sur la contrainte d'unicité (user, date, heure, rang).
  */
 final class AdpImporterTest extends KernelTestCase
 {
     private EntityManagerInterface $entityManager;
     private AdpImporter $importer;
+    private User $user;
 
     protected function setUp(): void
     {
@@ -42,12 +44,16 @@ final class AdpImporterTest extends KernelTestCase
         $this->importer = new AdpImporter($entityManager, new AdpParser(), new ImportPlanner(), $repository);
 
         $this->resetSchema();
+
+        $this->user = User::register('guillaume@example.com', 'hashed-password');
+        $this->entityManager->persist($this->user);
+        $this->entityManager->flush();
     }
 
     #[Test]
     public function it_persists_a_week_of_punches_and_readings(): void
     {
-        $plan = $this->importer->import($this->paste(), 2026, new \DateTimeImmutable('2026-07-24 03:00:00'));
+        $plan = $this->importer->import($this->user, $this->paste(), 2026, new \DateTimeImmutable('2026-07-24 03:00:00'));
 
         self::assertCount(4, $plan->punchesToCreate());
         self::assertSame(4, $this->countRows(PunchEvent::class));
@@ -58,10 +64,9 @@ final class AdpImporterTest extends KernelTestCase
     #[Test]
     public function re_importing_adds_no_punch_but_appends_a_new_reading_each_time(): void
     {
-        $this->importer->import($this->paste(), 2026, new \DateTimeImmutable('2026-07-24 03:00:00'));
-        $this->entityManager->clear(); // simule une seconde requête, base relue
+        $this->importer->import($this->user, $this->paste(), 2026, new \DateTimeImmutable('2026-07-24 03:00:00'));
 
-        $plan = $this->importer->import($this->paste(), 2026, new \DateTimeImmutable('2026-07-27 03:00:00'));
+        $plan = $this->importer->import($this->user, $this->paste(), 2026, new \DateTimeImmutable('2026-07-27 03:00:00'));
 
         self::assertCount(0, $plan->punchesToCreate());
         self::assertSame(4, $this->countRows(PunchEvent::class));  // pointages inchangés
@@ -80,7 +85,7 @@ final class AdpImporterTest extends KernelTestCase
     private function resetSchema(): void
     {
         $connection = $this->entityManager->getConnection();
-        foreach (['punch_event', 'employer_reading', 'raw_import'] as $table) {
+        foreach (['punch_event', 'employer_reading', 'raw_import', 'app_user'] as $table) {
             $connection->executeStatement('DROP TABLE IF EXISTS '.$table);
         }
 
