@@ -173,6 +173,7 @@ final class DailyCalculatorTest extends TestCase
             journeeReferenceEffective: $this->settings->journeeReferenceEffective()->value(),
             rttMax: $this->settings->rttMax()->value(),
             finApresMidiTeletravail: $this->settings->finApresMidiTeletravail()->value(),
+            joursDeRepos: $this->settings->joursDeRepos(),
         );
 
         $fact = (new DailyCalculator())->calculate(

@@ -167,6 +167,7 @@ final class DayEventValorizerTest extends TestCase
             journeeReferenceEffective: 7 * 60 + 24,
             rttMax: 2 * 60,
             finApresMidiTeletravail: 16 * 60,
+            joursDeRepos: [6, 7],
         );
         $fact = $this->emptyFact();
         $event = DayEvent::declare($this->user(), $this->date(), DayEventCode::CongePaye, DayPortion::Full);

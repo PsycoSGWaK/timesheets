@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Domain\Projection\WeekProjectionCalculator;
 use App\Domain\Week\IsoWeek;
 use App\Domain\Work\WorkWeekAssembler;
+use App\Entity\Settings;
 use App\Entity\User;
 use App\Repository\DayEventRepository;
 use App\Repository\EmployerReadingRepository;
@@ -86,7 +87,7 @@ final class WeekController extends AbstractController
 
         $projection = $this->projectionCalculator->project(
             $workWeek->weekFact()->workedMinutes(),
-            $this->countRemainingWorkingDays($dates, $today),
+            $this->countRemainingWorkingDays($dates, $today, $settings),
             $settings,
         );
 
@@ -116,16 +117,17 @@ final class WeekController extends AbstractController
     }
 
     /**
-     * Jours ouvrés (lun-ven) de la semaine encore à venir, aujourd'hui inclus : ceux
-     * sur lesquels la répartition du temps restant a du sens.
+     * Jours ouvrés (hors jours de repos déclarés, spec du 28/07/2026) de la semaine
+     * encore à venir, aujourd'hui inclus : ceux sur lesquels la répartition du temps
+     * restant a du sens.
      *
      * @param list<\DateTimeImmutable> $dates
      */
-    private function countRemainingWorkingDays(array $dates, \DateTimeImmutable $today): int
+    private function countRemainingWorkingDays(array $dates, \DateTimeImmutable $today, Settings $settings): int
     {
         $count = 0;
         foreach ($dates as $date) {
-            if ((int) $date->format('N') <= 5 && $date >= $today) {
+            if (!$settings->estJourDeRepos($date) && $date >= $today) {
                 ++$count;
             }
         }

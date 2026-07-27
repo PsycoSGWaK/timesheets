@@ -27,8 +27,6 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\UniqueConstraint(name: 'uniq_settings_user', columns: ['user_id'])]
 final class Settings
 {
-    private const JOURS_OUVRES_PAR_SEMAINE = 5;
-
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -59,6 +57,18 @@ final class Settings
     #[ORM\Column(type: 'integer')]
     private int $finApresMidiTeletravail;
 
+    /**
+     * Jours de la semaine sans rien attendu (spec du 28/07/2026) : numéros ISO-8601
+     * (1 = lundi … 7 = dimanche), comme {@see \DateTimeImmutable::format()} avec `N`.
+     *
+     * @var list<int>
+     */
+    #[ORM\Column]
+    private array $joursDeRepos;
+
+    /**
+     * @param list<int> $joursDeRepos
+     */
     private function __construct(
         User $user,
         int $pauseMinimale,
@@ -68,6 +78,7 @@ final class Settings
         int $journeeReferenceEffective,
         int $rttMax,
         int $finApresMidiTeletravail,
+        array $joursDeRepos,
     ) {
         $this->user = $user;
         $this->applyAndValidate(
@@ -78,6 +89,7 @@ final class Settings
             $journeeReferenceEffective,
             $rttMax,
             $finApresMidiTeletravail,
+            $joursDeRepos,
         );
     }
 
@@ -85,7 +97,9 @@ final class Settings
      * Les valeurs jusqu'ici en dur dans les calculateurs (spec §3, confirmées par
      * Guillaume le 27/07/2026) : pause 30 min, fenêtre 11h30-14h00, journée
      * contractuelle 7h00, journée effective 7h24, RTT plafonné à 2h/semaine.
-     * Fin de demi-journée TT après-midi à 16h00, confirmée le 28/07/2026.
+     * Fin de demi-journée TT après-midi à 16h00, confirmée le 28/07/2026. Jours de
+     * repos par défaut : samedi et dimanche, pour matcher la projection Lun-Ven déjà
+     * en place avant que ce réglage n'existe.
      */
     public static function defaults(User $user): self
     {
@@ -98,9 +112,13 @@ final class Settings
             journeeReferenceEffective: 7 * 60 + 24,
             rttMax: 2 * 60,
             finApresMidiTeletravail: 16 * 60,
+            joursDeRepos: [6, 7],
         );
     }
 
+    /**
+     * @param list<int> $joursDeRepos
+     */
     public function update(
         int $pauseMinimale,
         int $fenetreDebut,
@@ -109,6 +127,7 @@ final class Settings
         int $journeeReferenceEffective,
         int $rttMax,
         int $finApresMidiTeletravail,
+        array $joursDeRepos,
     ): void {
         $this->applyAndValidate(
             $pauseMinimale,
@@ -118,9 +137,13 @@ final class Settings
             $journeeReferenceEffective,
             $rttMax,
             $finApresMidiTeletravail,
+            $joursDeRepos,
         );
     }
 
+    /**
+     * @param list<int> $joursDeRepos
+     */
     private function applyAndValidate(
         int $pauseMinimale,
         int $fenetreDebut,
@@ -129,6 +152,7 @@ final class Settings
         int $journeeReferenceEffective,
         int $rttMax,
         int $finApresMidiTeletravail,
+        array $joursDeRepos,
     ): void {
         foreach ([
             'pauseMinimale' => $pauseMinimale,
@@ -154,6 +178,18 @@ final class Settings
             );
         }
 
+        $joursDeRepos = array_values(array_unique($joursDeRepos));
+        foreach ($joursDeRepos as $jour) {
+            if ($jour < 1 || $jour > 7) {
+                throw new \InvalidArgumentException(
+                    sprintf('Un jour de repos doit être un numéro ISO 1 (lundi) à 7 (dimanche), reçu %d.', $jour),
+                );
+            }
+        }
+        if (7 === \count($joursDeRepos)) {
+            throw new \InvalidArgumentException('Au moins un jour de la semaine doit rester un jour ouvré.');
+        }
+
         $this->pauseMinimale = $pauseMinimale;
         $this->fenetreDebut = $fenetreDebut;
         $this->fenetreFin = $fenetreFin;
@@ -161,6 +197,8 @@ final class Settings
         $this->journeeReferenceEffective = $journeeReferenceEffective;
         $this->rttMax = $rttMax;
         $this->finApresMidiTeletravail = $finApresMidiTeletravail;
+        sort($joursDeRepos);
+        $this->joursDeRepos = $joursDeRepos;
     }
 
     public function id(): ?int
@@ -208,15 +246,34 @@ final class Settings
         return Minutes::of($this->finApresMidiTeletravail);
     }
 
-    /** 35h = journée contractuelle × 5 jours ouvrés. */
-    public function weeklyReference(): Minutes
+    /**
+     * @return list<int> numéros ISO 1 (lundi) à 7 (dimanche), triés
+     */
+    public function joursDeRepos(): array
     {
-        return Minutes::of($this->journeeReferenceContractuelle * self::JOURS_OUVRES_PAR_SEMAINE);
+        return $this->joursDeRepos;
     }
 
-    /** 37h = journée effective × 5 jours ouvrés. */
+    public function estJourDeRepos(\DateTimeImmutable $date): bool
+    {
+        return \in_array((int) $date->format('N'), $this->joursDeRepos, true);
+    }
+
+    /** Les 7 jours de la semaine, moins les jours de repos déclarés. */
+    public function joursOuvresParSemaine(): int
+    {
+        return 7 - \count($this->joursDeRepos);
+    }
+
+    /** 35h par défaut = journée contractuelle × jours ouvrés (7 − jours de repos). */
+    public function weeklyReference(): Minutes
+    {
+        return Minutes::of($this->journeeReferenceContractuelle * $this->joursOuvresParSemaine());
+    }
+
+    /** 37h par défaut = journée effective × jours ouvrés (7 − jours de repos). */
     public function weeklyBascule(): Minutes
     {
-        return Minutes::of($this->journeeReferenceEffective * self::JOURS_OUVRES_PAR_SEMAINE);
+        return Minutes::of($this->journeeReferenceEffective * $this->joursOuvresParSemaine());
     }
 }

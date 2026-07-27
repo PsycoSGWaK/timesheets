@@ -23,12 +23,14 @@ final class SettingsTest extends TestCase
         self::assertSame(7 * 60 + 24, $settings->journeeReferenceEffective()->value());
         self::assertSame(2 * 60, $settings->rttMax()->value());
         self::assertSame(16 * 60, $settings->finApresMidiTeletravail()->value());
+        self::assertSame([6, 7], $settings->joursDeRepos());
     }
 
     #[Test]
     public function the_weekly_reference_is_five_times_the_contractual_day(): void
     {
-        // 35h = 7h00 x 5 (spec §3), derive plutot que duplique.
+        // 35h = 7h00 x 5 (spec §3), derive plutot que duplique : 5 jours ouvres car
+        // samedi + dimanche sont les jours de repos par defaut.
         $settings = Settings::defaults($this->user());
 
         self::assertSame(35 * 60, $settings->weeklyReference()->value());
@@ -41,6 +43,27 @@ final class SettingsTest extends TestCase
         $settings = Settings::defaults($this->user());
 
         self::assertSame(37 * 60, $settings->weeklyBascule()->value());
+    }
+
+    #[Test]
+    public function the_weekly_thresholds_shrink_with_more_rest_days(): void
+    {
+        // 4 jours ouvres (mer/sam/dim de repos) : 35h -> 28h, la reference suit.
+        $settings = Settings::defaults($this->user());
+        $settings->update(
+            pauseMinimale: 30,
+            fenetreDebut: 11 * 60 + 30,
+            fenetreFin: 14 * 60,
+            journeeReferenceContractuelle: 7 * 60,
+            journeeReferenceEffective: 7 * 60 + 24,
+            rttMax: 2 * 60,
+            finApresMidiTeletravail: 16 * 60,
+            joursDeRepos: [3, 6, 7],
+        );
+
+        self::assertSame(4, $settings->joursOuvresParSemaine());
+        self::assertSame(28 * 60, $settings->weeklyReference()->value());
+        self::assertSame(4 * (7 * 60 + 24), $settings->weeklyBascule()->value());
     }
 
     #[Test]
@@ -71,6 +94,7 @@ final class SettingsTest extends TestCase
             journeeReferenceEffective: 7 * 60,
             rttMax: 3 * 60,
             finApresMidiTeletravail: 17 * 60,
+            joursDeRepos: [7],
         );
 
         self::assertSame(20, $settings->pauseMinimale()->value());
@@ -80,6 +104,7 @@ final class SettingsTest extends TestCase
         self::assertSame(7 * 60, $settings->journeeReferenceEffective()->value());
         self::assertSame(3 * 60, $settings->rttMax()->value());
         self::assertSame(17 * 60, $settings->finApresMidiTeletravail()->value());
+        self::assertSame([7], $settings->joursDeRepos());
     }
 
     #[Test]
@@ -97,6 +122,7 @@ final class SettingsTest extends TestCase
             journeeReferenceEffective: 7 * 60,
             rttMax: 2 * 60,
             finApresMidiTeletravail: 16 * 60,
+            joursDeRepos: [6, 7],
         );
     }
 
@@ -115,6 +141,7 @@ final class SettingsTest extends TestCase
             journeeReferenceEffective: 7 * 60 + 24,
             rttMax: 2 * 60,
             finApresMidiTeletravail: 16 * 60,
+            joursDeRepos: [6, 7],
         );
     }
 
@@ -136,7 +163,66 @@ final class SettingsTest extends TestCase
             journeeReferenceEffective: 7 * 60 + 24,
             rttMax: 2 * 60,
             finApresMidiTeletravail: 11 * 60,
+            joursDeRepos: [6, 7],
         );
+    }
+
+    #[Test]
+    public function it_rejects_a_weekday_outside_the_iso_range(): void
+    {
+        $settings = Settings::defaults($this->user());
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        $settings->update(
+            pauseMinimale: 30,
+            fenetreDebut: 11 * 60 + 30,
+            fenetreFin: 14 * 60,
+            journeeReferenceContractuelle: 7 * 60,
+            journeeReferenceEffective: 7 * 60 + 24,
+            rttMax: 2 * 60,
+            finApresMidiTeletravail: 16 * 60,
+            joursDeRepos: [0, 6],
+        );
+    }
+
+    #[Test]
+    public function it_rejects_every_day_of_the_week_being_a_rest_day(): void
+    {
+        // Au moins un jour ouvré, sinon la référence hebdomadaire tombe à zéro.
+        $settings = Settings::defaults($this->user());
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        $settings->update(
+            pauseMinimale: 30,
+            fenetreDebut: 11 * 60 + 30,
+            fenetreFin: 14 * 60,
+            journeeReferenceContractuelle: 7 * 60,
+            journeeReferenceEffective: 7 * 60 + 24,
+            rttMax: 2 * 60,
+            finApresMidiTeletravail: 16 * 60,
+            joursDeRepos: [1, 2, 3, 4, 5, 6, 7],
+        );
+    }
+
+    #[Test]
+    public function duplicate_weekdays_are_deduplicated(): void
+    {
+        $settings = Settings::defaults($this->user());
+
+        $settings->update(
+            pauseMinimale: 30,
+            fenetreDebut: 11 * 60 + 30,
+            fenetreFin: 14 * 60,
+            journeeReferenceContractuelle: 7 * 60,
+            journeeReferenceEffective: 7 * 60 + 24,
+            rttMax: 2 * 60,
+            finApresMidiTeletravail: 16 * 60,
+            joursDeRepos: [6, 6, 7, 7],
+        );
+
+        self::assertSame([6, 7], $settings->joursDeRepos());
     }
 
     private function user(): User
