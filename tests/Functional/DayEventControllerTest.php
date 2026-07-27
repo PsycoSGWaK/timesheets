@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional;
 
+use App\Domain\Balance\BalanceCounter;
 use App\Entity\DayEvent;
+use App\Repository\BalanceMovementRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use PHPUnit\Framework\Attributes\Test;
@@ -85,6 +87,97 @@ final class DayEventControllerTest extends WebTestCase
 
         self::assertResponseRedirects();
         self::assertSame(0, $this->entityManager->getRepository(DayEvent::class)->count([]));
+    }
+
+    #[Test]
+    public function declaring_a_full_rtt_day_debits_the_rtt_balance(): void
+    {
+        $this->client->request('POST', '/semaine/evenement', [
+            'date' => '2026-07-24',
+            'code' => 'RTT',
+            'portion' => 'full',
+        ]);
+
+        self::assertResponseRedirects();
+
+        self::assertSame(-420, $this->balanceRepository()->balanceFor($this->currentUser(), BalanceCounter::Rtt)->value());
+    }
+
+    #[Test]
+    public function declaring_a_half_rtt_day_debits_half_the_reference_day(): void
+    {
+        $this->client->request('POST', '/semaine/evenement', [
+            'date' => '2026-07-24',
+            'code' => 'RTT',
+            'portion' => 'half',
+        ]);
+
+        self::assertSame(-210, $this->balanceRepository()->balanceFor($this->currentUser(), BalanceCounter::Rtt)->value());
+    }
+
+    #[Test]
+    public function removing_an_rtt_day_reverses_its_debit(): void
+    {
+        $this->client->request('POST', '/semaine/evenement', [
+            'date' => '2026-07-24',
+            'code' => 'RTT',
+            'portion' => 'full',
+        ]);
+
+        $this->client->request('POST', '/semaine/evenement/supprimer', [
+            'date' => '2026-07-24',
+        ]);
+
+        self::assertSame(0, $this->balanceRepository()->balanceFor($this->currentUser(), BalanceCounter::Rtt)->value());
+    }
+
+    #[Test]
+    public function replacing_an_rtt_day_with_another_code_reverses_the_debit_without_creating_a_new_one(): void
+    {
+        $this->client->request('POST', '/semaine/evenement', [
+            'date' => '2026-07-24',
+            'code' => 'RTT',
+            'portion' => 'full',
+        ]);
+        $this->client->request('POST', '/semaine/evenement', [
+            'date' => '2026-07-24',
+            'code' => 'CP',
+            'portion' => 'full',
+        ]);
+
+        self::assertSame(0, $this->balanceRepository()->balanceFor($this->currentUser(), BalanceCounter::Rtt)->value());
+    }
+
+    #[Test]
+    public function declaring_a_non_rtt_event_never_touches_the_rtt_balance(): void
+    {
+        $this->client->request('POST', '/semaine/evenement', [
+            'date' => '2026-07-24',
+            'code' => 'TT',
+            'portion' => 'full',
+        ]);
+
+        self::assertSame(0, $this->balanceRepository()->balanceFor($this->currentUser(), BalanceCounter::Rtt)->value());
+    }
+
+    private function balanceRepository(): BalanceMovementRepository
+    {
+        $repository = static::getContainer()->get(BalanceMovementRepository::class);
+        if (!$repository instanceof BalanceMovementRepository) {
+            throw new \RuntimeException('BalanceMovementRepository indisponible.');
+        }
+
+        return $repository;
+    }
+
+    private function currentUser(): \App\Entity\User
+    {
+        $user = $this->entityManager->getRepository(\App\Entity\User::class)->findOneBy([]);
+        if (null === $user) {
+            throw new \RuntimeException('Aucun utilisateur en base.');
+        }
+
+        return $user;
     }
 
     private function resetSchema(): void
