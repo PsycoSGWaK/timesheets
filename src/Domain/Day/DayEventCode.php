@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Day;
 
 use App\Domain\Time\Minutes;
+use App\Entity\Settings;
 
 /**
  * Les événements d'une journée exprimés en jours (1 ou 0,5), spec §2.
@@ -32,16 +33,16 @@ enum DayEventCode: string
     }
 
     /**
-     * La journée pleine que vaut ce code. Le TT est du travail réel : il suit la
-     * journée effective de 7h24 (37h/5j). Les autres codes sont des absences,
-     * comptées sur la base contractuelle de 7h00 (35h/5j) — deux références
+     * La journée pleine que vaut ce code, selon le paramétrage de l'utilisateur. Le TT
+     * est du travail réel : il suit la journée effective (37h/5j). Les autres codes
+     * sont des absences, comptées sur la base contractuelle (35h/5j) — deux références
      * distinctes, confirmées par Guillaume, à ne pas confondre.
      */
-    public function referenceDay(): Minutes
+    public function referenceDay(Settings $settings): Minutes
     {
         return match ($this) {
-            self::Teletravail => Minutes::fromHoursAndMinutes(7, 24),
-            default => Minutes::fromHoursAndMinutes(7, 0),
+            self::Teletravail => $settings->journeeReferenceEffective(),
+            default => $settings->journeeReferenceContractuelle(),
         };
     }
 }

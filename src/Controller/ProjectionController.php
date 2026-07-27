@@ -6,10 +6,13 @@ namespace App\Controller;
 
 use App\Domain\Projection\LeaveTimeCalculator;
 use App\Domain\Time\Minutes;
+use App\Entity\User;
+use App\Repository\SettingsRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 /**
  * Le mode prévisionnel du quotidien : « à quelle heure puis-je partir ? » (spec §4.6).
@@ -21,8 +24,12 @@ use Symfony\Component\Routing\Attribute\Route;
 final class ProjectionController extends AbstractController
 {
     #[Route('/quand-partir', name: 'projection', methods: ['GET', 'POST'])]
-    public function projection(Request $request, LeaveTimeCalculator $calculator): Response
-    {
+    public function projection(
+        Request $request,
+        LeaveTimeCalculator $calculator,
+        SettingsRepository $settingsRepository,
+        #[CurrentUser] User $user,
+    ): Response {
         $morningStart = (string) $request->request->get('morning_start', '');
         $lunchDeparture = (string) $request->request->get('lunch_departure', '');
         $lunchReturn = (string) $request->request->get('lunch_return', '');
@@ -36,6 +43,7 @@ final class ProjectionController extends AbstractController
                     Minutes::fromClock($morningStart),
                     Minutes::fromClock($lunchDeparture),
                     Minutes::fromClock($lunchReturn),
+                    $settingsRepository->forUser($user),
                 );
             } catch (\InvalidArgumentException $exception) {
                 $error = $exception->getMessage();

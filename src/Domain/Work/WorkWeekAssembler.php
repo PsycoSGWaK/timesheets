@@ -11,6 +11,7 @@ use App\Domain\Time\Minutes;
 use App\Domain\Week\WeeklyCalculator;
 use App\Entity\DayEvent;
 use App\Entity\PunchEvent;
+use App\Entity\Settings;
 
 /**
  * Assemble une semaine affichable à partir de données déjà chargées : pour chacun des
@@ -44,6 +45,7 @@ final class WorkWeekAssembler
         array $employerReadingsByDate,
         array $eventsByDate,
         \DateTimeImmutable $today,
+        Settings $settings,
     ): WorkWeek {
         $probativeByDate = $this->groupProbativePunchesByDate($punches);
 
@@ -55,8 +57,8 @@ final class WorkWeekAssembler
             $dayPunches = $probativeByDate[$key] ?? [];
             $event = $eventsByDate[$key] ?? null;
 
-            $fact = $this->dailyCalculator->calculate($date, ...$dayPunches);
-            $fact = $this->eventValorizer->valorize($fact, \count($dayPunches), $event);
+            $fact = $this->dailyCalculator->calculate($date, $settings, ...$dayPunches);
+            $fact = $this->eventValorizer->valorize($fact, \count($dayPunches), $event, $settings);
             $dayFacts[] = $fact;
 
             $reading = $employerReadingsByDate[$key] ?? null;
@@ -70,7 +72,7 @@ final class WorkWeekAssembler
             $workDays[] = new WorkDay($date, $fact, $reading, $reconciliation, $event);
         }
 
-        return new WorkWeek($this->weeklyCalculator->aggregate(...$dayFacts), $workDays);
+        return new WorkWeek($this->weeklyCalculator->aggregate($settings, ...$dayFacts), $workDays);
     }
 
     /**

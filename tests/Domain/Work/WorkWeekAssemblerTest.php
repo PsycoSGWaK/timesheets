@@ -11,6 +11,7 @@ use App\Domain\Work\WorkWeek;
 use App\Domain\Work\WorkWeekAssembler;
 use App\Entity\DayEvent;
 use App\Entity\PunchEvent;
+use App\Entity\Settings;
 use App\Entity\User;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -20,10 +21,12 @@ final class WorkWeekAssemblerTest extends TestCase
     private const TODAY = '2026-07-25'; // samedi ; lun-ven de la semaine sont passés
 
     private User $user;
+    private Settings $settings;
 
     protected function setUp(): void
     {
         $this->user = User::register('guillaume@example.com', 'hashed-password');
+        $this->settings = Settings::defaults($this->user);
     }
 
     #[Test]
@@ -130,7 +133,7 @@ final class WorkWeekAssemblerTest extends TestCase
             new \App\Domain\Week\WeeklyCalculator(),
             new \App\Domain\Reconciliation\ReconciliationDetector(),
             new \App\Domain\Day\DayEventValorizer(),
-        ))->assemble($dates, $punches, $readings, $events, new \DateTimeImmutable(self::TODAY));
+        ))->assemble($dates, $punches, $readings, $events, new \DateTimeImmutable(self::TODAY), $this->settings);
     }
 
     /**
