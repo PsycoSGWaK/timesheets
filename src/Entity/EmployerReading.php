@@ -9,7 +9,7 @@ use App\Repository\EmployerReadingRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Un relevé horodaté du total qu'ADP affiche pour une journée.
+ * Un relevé horodaté du total qu'ADP affiche pour une journée d'un utilisateur.
  *
  * Le total de l'employeur est une observation, jamais une donnée maître : il peut
  * changer après coup (consolidation nocturne, validation d'un événement,
@@ -23,13 +23,17 @@ use Doctrine\ORM\Mapping as ORM;
  */
 #[ORM\Entity(repositoryClass: EmployerReadingRepository::class)]
 #[ORM\Table(name: 'employer_reading')]
-#[ORM\Index(name: 'idx_reading_date', columns: ['date'])]
+#[ORM\Index(name: 'idx_reading_user_date', columns: ['user_id', 'date'])]
 final class EmployerReading
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(nullable: false)]
+    private User $user;
 
     #[ORM\Column(type: 'date_immutable')]
     private \DateTimeImmutable $date;
@@ -43,6 +47,7 @@ final class EmployerReading
     private \DateTimeImmutable $observedAt;
 
     private function __construct(
+        User $user,
         \DateTimeImmutable $date,
         Minutes $employerTotal,
         \DateTimeImmutable $observedAt,
@@ -53,22 +58,29 @@ final class EmployerReading
             );
         }
 
+        $this->user = $user;
         $this->date = $date->setTime(0, 0, 0, 0);
         $this->employerMinutes = $employerTotal->value();
         $this->observedAt = $observedAt;
     }
 
     public static function record(
+        User $user,
         \DateTimeImmutable $date,
         Minutes $employerTotal,
         \DateTimeImmutable $observedAt,
     ): self {
-        return new self($date, $employerTotal, $observedAt);
+        return new self($user, $date, $employerTotal, $observedAt);
     }
 
     public function id(): ?int
     {
         return $this->id;
+    }
+
+    public function user(): User
+    {
+        return $this->user;
     }
 
     public function date(): \DateTimeImmutable

@@ -8,6 +8,7 @@ use App\Domain\Punch\PunchNature;
 use App\Domain\Punch\PunchOrigin;
 use App\Domain\Time\Minutes;
 use App\Entity\PunchEvent;
+use App\Entity\User;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -18,7 +19,7 @@ final class PunchEventTest extends TestCase
     #[Test]
     public function a_punch_pasted_from_adp_is_a_real_fact(): void
     {
-        $punch = PunchEvent::realFromAdp($this->day(), Minutes::fromClock('08:30'), 1);
+        $punch = PunchEvent::realFromAdp($this->user(), $this->day(), Minutes::fromClock('08:30'), 1);
 
         self::assertSame(PunchNature::Reel, $punch->nature());
         self::assertSame(PunchOrigin::Adp, $punch->origin());
@@ -28,7 +29,7 @@ final class PunchEventTest extends TestCase
     #[Test]
     public function a_provisional_punch_is_a_hand_typed_hypothesis(): void
     {
-        $punch = PunchEvent::provisional($this->day(), Minutes::fromClock('16:42'), 4);
+        $punch = PunchEvent::provisional($this->user(), $this->day(), Minutes::fromClock('16:42'), 4);
 
         self::assertSame(PunchNature::Previsionnel, $punch->nature());
         self::assertSame(PunchOrigin::SaisieManuelle, $punch->origin());
@@ -41,7 +42,7 @@ final class PunchEventTest extends TestCase
         // Le cas soulevé par l'utilisateur : un badge réel qu'ADP a manqué et que
         // l'on comble à la main. C'est un fait (réel), mais d'origine manuelle —
         // d'où les deux dimensions distinctes.
-        $punch = PunchEvent::manualCorrection($this->day(), Minutes::fromClock('13:00'), 3);
+        $punch = PunchEvent::manualCorrection($this->user(), $this->day(), Minutes::fromClock('13:00'), 3);
 
         self::assertSame(PunchNature::Reel, $punch->nature());
         self::assertSame(PunchOrigin::SaisieManuelle, $punch->origin());
@@ -52,11 +53,13 @@ final class PunchEventTest extends TestCase
     #[Test]
     public function it_exposes_its_slot_identity(): void
     {
-        $punch = PunchEvent::realFromAdp($this->day(), Minutes::fromClock('08:30'), 1);
+        $user = $this->user();
+        $punch = PunchEvent::realFromAdp($user, $this->day(), Minutes::fromClock('08:30'), 1);
 
         self::assertSame(self::DAY, $punch->date()->format('Y-m-d'));
         self::assertTrue(Minutes::fromClock('08:30')->equals($punch->time()));
         self::assertSame(1, $punch->rang());
+        self::assertSame($user, $punch->user());
     }
 
     #[Test]
@@ -64,7 +67,7 @@ final class PunchEventTest extends TestCase
     {
         // Une date porteuse d'une heure ne doit pas polluer la clé de journée.
         $withTime = new \DateTimeImmutable(self::DAY.' 08:30:00');
-        $punch = PunchEvent::realFromAdp($withTime, Minutes::fromClock('08:30'), 1);
+        $punch = PunchEvent::realFromAdp($this->user(), $withTime, Minutes::fromClock('08:30'), 1);
 
         self::assertSame('00:00:00', $punch->date()->format('H:i:s'));
     }
@@ -72,7 +75,7 @@ final class PunchEventTest extends TestCase
     #[Test]
     public function it_has_no_identity_before_persistence(): void
     {
-        $punch = PunchEvent::realFromAdp($this->day(), Minutes::fromClock('08:30'), 1);
+        $punch = PunchEvent::realFromAdp($this->user(), $this->day(), Minutes::fromClock('08:30'), 1);
 
         self::assertNull($punch->id());
     }
@@ -82,7 +85,7 @@ final class PunchEventTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
 
-        PunchEvent::realFromAdp($this->day(), Minutes::fromClock('08:30'), 0);
+        PunchEvent::realFromAdp($this->user(), $this->day(), Minutes::fromClock('08:30'), 0);
     }
 
     #[Test]
@@ -91,7 +94,7 @@ final class PunchEventTest extends TestCase
         // Un pointage est un instant de la journée : ni négatif, ni au-delà de 23:59.
         $this->expectException(\InvalidArgumentException::class);
 
-        PunchEvent::realFromAdp($this->day(), Minutes::of(1440), 1);
+        PunchEvent::realFromAdp($this->user(), $this->day(), Minutes::of(1440), 1);
     }
 
     #[Test]
@@ -100,8 +103,9 @@ final class PunchEventTest extends TestCase
         // Un réel collé remplace le prévisionnel du même créneau (date + rang),
         // indépendamment de l'heure exacte. La réconciliation elle-même viendra
         // avec le parseur ; ici on n'expose que la notion de créneau.
-        $provisional = PunchEvent::provisional($this->day(), Minutes::fromClock('16:40'), 4);
-        $real = PunchEvent::realFromAdp($this->day(), Minutes::fromClock('16:42'), 4);
+        $user = $this->user();
+        $provisional = PunchEvent::provisional($user, $this->day(), Minutes::fromClock('16:40'), 4);
+        $real = PunchEvent::realFromAdp($user, $this->day(), Minutes::fromClock('16:42'), 4);
 
         self::assertTrue($real->isSameSlotAs($provisional));
     }
@@ -109,8 +113,9 @@ final class PunchEventTest extends TestCase
     #[Test]
     public function a_different_rank_is_a_different_slot(): void
     {
-        $morning = PunchEvent::realFromAdp($this->day(), Minutes::fromClock('08:30'), 1);
-        $noon = PunchEvent::realFromAdp($this->day(), Minutes::fromClock('12:12'), 2);
+        $user = $this->user();
+        $morning = PunchEvent::realFromAdp($user, $this->day(), Minutes::fromClock('08:30'), 1);
+        $noon = PunchEvent::realFromAdp($user, $this->day(), Minutes::fromClock('12:12'), 2);
 
         self::assertFalse($morning->isSameSlotAs($noon));
     }
@@ -118,8 +123,10 @@ final class PunchEventTest extends TestCase
     #[Test]
     public function a_different_day_is_a_different_slot(): void
     {
-        $today = PunchEvent::realFromAdp($this->day(), Minutes::fromClock('08:30'), 1);
+        $user = $this->user();
+        $today = PunchEvent::realFromAdp($user, $this->day(), Minutes::fromClock('08:30'), 1);
         $tomorrow = PunchEvent::realFromAdp(
+            $user,
             new \DateTimeImmutable('2026-07-24'),
             Minutes::fromClock('08:30'),
             1,
@@ -128,8 +135,25 @@ final class PunchEventTest extends TestCase
         self::assertFalse($today->isSameSlotAs($tomorrow));
     }
 
+    #[Test]
+    public function a_different_user_is_a_different_slot_even_on_the_same_day_and_rank(): void
+    {
+        // Le cloisonnement par utilisateur fait partie de l'identité du créneau :
+        // les données d'un utilisateur ne doivent jamais recouvrir celles d'un autre.
+        $date = $this->day();
+        $mine = PunchEvent::realFromAdp($this->user('alice@example.com'), $date, Minutes::fromClock('08:30'), 1);
+        $theirs = PunchEvent::realFromAdp($this->user('bob@example.com'), $date, Minutes::fromClock('08:30'), 1);
+
+        self::assertFalse($mine->isSameSlotAs($theirs));
+    }
+
     private function day(): \DateTimeImmutable
     {
         return new \DateTimeImmutable(self::DAY);
+    }
+
+    private function user(string $email = 'guillaume@example.com'): User
+    {
+        return User::register($email, 'hashed-password');
     }
 }

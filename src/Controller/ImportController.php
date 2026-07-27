@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Domain\Adp\AdpParser;
+use App\Entity\User;
 use App\Import\AdpImporter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 /**
  * L'écran central : coller le texte ADP, voir ce qui a été compris, valider l'import.
@@ -27,7 +29,7 @@ final class ImportController extends AbstractController
     }
 
     #[Route('/import', name: 'import', methods: ['GET', 'POST'])]
-    public function import(Request $request, AdpParser $parser, AdpImporter $importer): Response
+    public function import(Request $request, AdpParser $parser, AdpImporter $importer, #[CurrentUser] User $user): Response
     {
         $payload = trim((string) $request->request->get('payload', ''));
         $year = (int) $request->request->get('year', (int) date('Y'));
@@ -40,7 +42,7 @@ final class ImportController extends AbstractController
         if ($request->isMethod('POST') && '' !== $payload) {
             try {
                 if ('importer' === $action) {
-                    $plan = $importer->import($payload, $year);
+                    $plan = $importer->import($user, $payload, $year);
                     $result = [
                         'punchesCreated' => \count($plan->punchesToCreate()),
                         'readingsRecorded' => \count($plan->readingsToRecord()),

@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Domain\Time\Minutes;
 use App\Entity\EmployerReading;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -27,7 +28,7 @@ final class EmployerReadingRepository extends ServiceEntityRepository
      *
      * @return array<string, Minutes> indexé par date « Y-m-d »
      */
-    public function latestMinutesByDates(array $dates): array
+    public function latestMinutesByDates(User $user, array $dates): array
     {
         if ([] === $dates) {
             return [];
@@ -36,7 +37,9 @@ final class EmployerReadingRepository extends ServiceEntityRepository
         $days = array_map(static fn (\DateTimeImmutable $d): string => $d->format('Y-m-d'), $dates);
 
         $readings = $this->createQueryBuilder('r')
+            ->andWhere('r.user = :user')
             ->andWhere('r.date IN (:days)')
+            ->setParameter('user', $user)
             ->setParameter('days', $days)
             ->orderBy('r.observedAt', 'ASC')
             ->getQuery()

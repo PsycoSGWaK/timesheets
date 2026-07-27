@@ -9,12 +9,20 @@ use App\Domain\Time\Minutes;
 use App\Domain\Work\WorkWeek;
 use App\Domain\Work\WorkWeekAssembler;
 use App\Entity\PunchEvent;
+use App\Entity\User;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 final class WorkWeekAssemblerTest extends TestCase
 {
     private const TODAY = '2026-07-25'; // samedi ; lun-ven de la semaine sont passés
+
+    private User $user;
+
+    protected function setUp(): void
+    {
+        $this->user = User::register('guillaume@example.com', 'hashed-password');
+    }
 
     #[Test]
     public function it_builds_one_work_day_per_date_of_the_week(): void
@@ -69,8 +77,8 @@ final class WorkWeekAssemblerTest extends TestCase
     {
         // Un pointage prévisionnel n'entre pas dans le décompte officiel.
         $punches = [
-            PunchEvent::provisional(new \DateTimeImmutable('2026-07-22'), Minutes::fromClock('08:00'), 1),
-            PunchEvent::provisional(new \DateTimeImmutable('2026-07-22'), Minutes::fromClock('16:00'), 2),
+            PunchEvent::provisional($this->user, new \DateTimeImmutable('2026-07-22'), Minutes::fromClock('08:00'), 1),
+            PunchEvent::provisional($this->user, new \DateTimeImmutable('2026-07-22'), Minutes::fromClock('16:00'), 2),
         ];
 
         $week = $this->assemble($punches, []);
@@ -108,7 +116,7 @@ final class WorkWeekAssemblerTest extends TestCase
         $punches = [];
         $rang = 1;
         foreach ($clocks as $clock) {
-            $punches[] = PunchEvent::realFromAdp(new \DateTimeImmutable($date), Minutes::fromClock($clock), $rang);
+            $punches[] = PunchEvent::realFromAdp($this->user, new \DateTimeImmutable($date), Minutes::fromClock($clock), $rang);
             ++$rang;
         }
 
