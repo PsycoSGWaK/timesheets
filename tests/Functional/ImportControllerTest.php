@@ -6,8 +6,8 @@ namespace App\Tests\Functional;
 
 use App\Entity\EmployerReading;
 use App\Entity\PunchEvent;
+use App\Tests\ResetsSchema;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -15,6 +15,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 final class ImportControllerTest extends WebTestCase
 {
     use LogsInAUser;
+    use ResetsSchema;
 
     private KernelBrowser $client;
     private EntityManagerInterface $entityManager;
@@ -29,7 +30,7 @@ final class ImportControllerTest extends WebTestCase
         }
         $this->entityManager = $entityManager;
 
-        $this->resetSchema();
+        $this->resetSchema($this->entityManager);
         $this->logIn($this->client, $this->entityManager);
     }
 
@@ -77,17 +78,6 @@ final class ImportControllerTest extends WebTestCase
         self::assertSelectorTextContains('.result', 'Import effectué');
         self::assertSame(4, $this->entityManager->getRepository(PunchEvent::class)->count([]));
         self::assertSame(2, $this->entityManager->getRepository(EmployerReading::class)->count([]));
-    }
-
-    private function resetSchema(): void
-    {
-        $connection = $this->entityManager->getConnection();
-        foreach (['punch_event', 'employer_reading', 'raw_import', 'day_event', 'balance_movement', 'settings', 'app_user'] as $table) {
-            $connection->executeStatement('DROP TABLE IF EXISTS '.$table);
-        }
-
-        $tool = new SchemaTool($this->entityManager);
-        $tool->createSchema($this->entityManager->getMetadataFactory()->getAllMetadata());
     }
 
     private function paste(): string

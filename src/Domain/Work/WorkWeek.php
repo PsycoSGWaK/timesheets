@@ -35,15 +35,4 @@ final readonly class WorkWeek
     {
         return $this->days;
     }
-
-    /**
-     * @return list<WorkDay> uniquement les journées dont le rapprochement appelle une action
-     */
-    public function daysNeedingAttention(): array
-    {
-        return array_values(array_filter(
-            $this->days,
-            static fn (WorkDay $day): bool => $day->reconciliation()->needsAttention(),
-        ));
-    }
 }

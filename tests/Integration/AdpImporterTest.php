@@ -11,8 +11,8 @@ use App\Entity\PunchEvent;
 use App\Entity\RawImport;
 use App\Entity\User;
 use App\Import\AdpImporter;
+use App\Tests\ResetsSchema;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -22,6 +22,8 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
  */
 final class AdpImporterTest extends KernelTestCase
 {
+    use ResetsSchema;
+
     private EntityManagerInterface $entityManager;
     private AdpImporter $importer;
     private User $user;
@@ -43,7 +45,7 @@ final class AdpImporterTest extends KernelTestCase
         $repository = $entityManager->getRepository(PunchEvent::class);
         $this->importer = new AdpImporter($entityManager, new AdpParser(), new ImportPlanner(), $repository);
 
-        $this->resetSchema();
+        $this->resetSchema($this->entityManager);
 
         $this->user = User::register('guillaume@example.com', 'hashed-password');
         $this->entityManager->persist($this->user);
@@ -80,17 +82,6 @@ final class AdpImporterTest extends KernelTestCase
     private function countRows(string $entity): int
     {
         return $this->entityManager->getRepository($entity)->count([]);
-    }
-
-    private function resetSchema(): void
-    {
-        $connection = $this->entityManager->getConnection();
-        foreach (['punch_event', 'employer_reading', 'raw_import', 'day_event', 'balance_movement', 'settings', 'app_user'] as $table) {
-            $connection->executeStatement('DROP TABLE IF EXISTS '.$table);
-        }
-
-        $tool = new SchemaTool($this->entityManager);
-        $tool->createSchema($this->entityManager->getMetadataFactory()->getAllMetadata());
     }
 
     private function paste(): string

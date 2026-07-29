@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional;
 
+use App\Tests\ResetsSchema;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -13,6 +13,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 final class ProjectionControllerTest extends WebTestCase
 {
     use LogsInAUser;
+    use ResetsSchema;
 
     private KernelBrowser $client;
     private EntityManagerInterface $entityManager;
@@ -27,7 +28,7 @@ final class ProjectionControllerTest extends WebTestCase
         }
         $this->entityManager = $entityManager;
 
-        $this->resetSchema();
+        $this->resetSchema($this->entityManager);
         $this->logIn($this->client, $this->entityManager);
     }
 
@@ -64,16 +65,5 @@ final class ProjectionControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('.error');
-    }
-
-    private function resetSchema(): void
-    {
-        $connection = $this->entityManager->getConnection();
-        foreach (['punch_event', 'employer_reading', 'raw_import', 'day_event', 'balance_movement', 'settings', 'app_user'] as $table) {
-            $connection->executeStatement('DROP TABLE IF EXISTS '.$table);
-        }
-
-        $tool = new SchemaTool($this->entityManager);
-        $tool->createSchema($this->entityManager->getMetadataFactory()->getAllMetadata());
     }
 }
