@@ -63,4 +63,18 @@ final class DayEventCodeTest extends TestCase
         self::assertSame(420, DayEventCode::Rtt->referenceDay($this->settings)->value());
         self::assertSame(420, DayEventCode::JourFerie->referenceDay($this->settings)->value());
     }
+
+    #[Test]
+    public function annual_quotas_apply_to_all_five_day_based_codes(): void
+    {
+        // Demande du 29/07/2026 (CP/TT/RTT/JF), CA ajouté le 30/07/2026.
+        $withQuota = DayEventCode::withAnnualQuota();
+
+        self::assertCount(5, $withQuota);
+        self::assertContains(DayEventCode::CongePaye, $withQuota);
+        self::assertContains(DayEventCode::CongeAnciennete, $withQuota);
+        self::assertContains(DayEventCode::Teletravail, $withQuota);
+        self::assertContains(DayEventCode::Rtt, $withQuota);
+        self::assertContains(DayEventCode::JourFerie, $withQuota);
+    }
 }

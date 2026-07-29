@@ -9,14 +9,16 @@
     .subtitle { color: var(--text-secondary); font-size: .9rem; margin-bottom: 1.5rem; }
     label { display: block; font-weight: 600; margin: .9rem 0 .3rem; color: var(--text-primary); }
     .field-hint { font-size: .8rem; color: var(--text-muted); font-weight: 400; }
-    input[type=time] {
+    input[type=time], input[type=text].quota {
         width: 100%; box-sizing: border-box;
         background: var(--surface-card); color: var(--text-primary);
         border: 1px solid var(--gridline); border-radius: 8px;
         padding: .5rem .6rem; font: inherit; font-size: 1rem;
         font-variant-numeric: tabular-nums;
     }
-    input[type=time]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    input[type=time]:focus, input[type=text].quota:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .quotas { display: grid; grid-template-columns: repeat(2, 1fr); gap: .9rem; margin-top: .4rem; }
+    .quotas label { margin: 0; font-size: .92rem; }
     button {
         margin-top: 1.2rem; padding: .6rem 1.2rem; border: 0; border-radius: 8px;
         background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 600; cursor: pointer;
@@ -77,6 +79,17 @@
                     <input type="checkbox" name="jours_de_repos[]" value="{{ iso }}" {{ iso in joursDeRepos ? 'checked' : '' }}>
                     {{ label }}
                 </label>
+            {% endfor %}
+        </div>
+
+        <label>Quotas annuels <span class="field-hint">(en jours, ex. "25" ou "25,5" — décompte visible dans Compteurs)</span></label>
+        <div class="quotas">
+            {% set codeLabels = {'CP': 'Congé payé', 'CA': 'Congé ancienneté', 'TT': 'Télétravail', 'RTT': 'RTT posé', 'JF': 'Jour férié'} %}
+            {% for code, label in codeLabels %}
+                <div>
+                    <label for="quota_{{ code|lower }}">{{ label }}</label>
+                    <input type="text" inputmode="decimal" class="quota" id="quota_{{ code|lower }}" name="quota_{{ code|lower }}" value="{{ quotas[code] }}">
+                </div>
             {% endfor %}
         </div>
 

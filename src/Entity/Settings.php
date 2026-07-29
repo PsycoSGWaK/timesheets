@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Domain\Day\DayEventCode;
+use App\Domain\Day\DayQuantity;
 use App\Domain\Time\Minutes;
 use App\Repository\SettingsRepository;
 use Doctrine\ORM\Mapping as ORM;
@@ -67,7 +69,18 @@ final class Settings
     private array $joursDeRepos;
 
     /**
-     * @param list<int> $joursDeRepos
+     * Quota annuel de jours posés, par code ({@see DayEventCode::withAnnualQuota()}),
+     * en demi-jours entiers (spec du 29/07/2026). Une valeur absente vaut zéro : pas
+     * de quota configuré tant que l'utilisateur ne l'a pas renseigné.
+     *
+     * @var array<string, int>
+     */
+    #[ORM\Column]
+    private array $quotasAnnuels;
+
+    /**
+     * @param list<int>          $joursDeRepos
+     * @param array<string, int> $quotasAnnuels
      */
     private function __construct(
         User $user,
@@ -79,6 +92,7 @@ final class Settings
         int $rttMax,
         int $finApresMidiTeletravail,
         array $joursDeRepos,
+        array $quotasAnnuels = [],
     ) {
         $this->user = $user;
         $this->applyAndValidate(
@@ -90,6 +104,7 @@ final class Settings
             $rttMax,
             $finApresMidiTeletravail,
             $joursDeRepos,
+            $quotasAnnuels,
         );
     }
 
@@ -117,7 +132,13 @@ final class Settings
     }
 
     /**
-     * @param list<int> $joursDeRepos
+     * `quotasAnnuels` est volontairement obligatoire, sans défaut : un appelant qui
+     * l'omettrait par erreur écraserait silencieusement les quotas déjà configurés
+     * (l'entité entière est réécrite à chaque sauvegarde). Toujours repasser la
+     * valeur courante ({@see self::quotaAnnuel()}) si l'appelant ne la modifie pas.
+     *
+     * @param list<int>          $joursDeRepos
+     * @param array<string, int> $quotasAnnuels
      */
     public function update(
         int $pauseMinimale,
@@ -128,6 +149,7 @@ final class Settings
         int $rttMax,
         int $finApresMidiTeletravail,
         array $joursDeRepos,
+        array $quotasAnnuels,
     ): void {
         $this->applyAndValidate(
             $pauseMinimale,
@@ -138,11 +160,13 @@ final class Settings
             $rttMax,
             $finApresMidiTeletravail,
             $joursDeRepos,
+            $quotasAnnuels,
         );
     }
 
     /**
-     * @param list<int> $joursDeRepos
+     * @param list<int>          $joursDeRepos
+     * @param array<string, int> $quotasAnnuels
      */
     private function applyAndValidate(
         int $pauseMinimale,
@@ -153,6 +177,7 @@ final class Settings
         int $rttMax,
         int $finApresMidiTeletravail,
         array $joursDeRepos,
+        array $quotasAnnuels,
     ): void {
         foreach ([
             'pauseMinimale' => $pauseMinimale,
@@ -190,6 +215,16 @@ final class Settings
             throw new \InvalidArgumentException('Au moins un jour de la semaine doit rester un jour ouvré.');
         }
 
+        $validCodes = array_map(static fn (DayEventCode $code): string => $code->value, DayEventCode::withAnnualQuota());
+        foreach ($quotasAnnuels as $code => $halfDays) {
+            if (!\in_array($code, $validCodes, true)) {
+                throw new \InvalidArgumentException(sprintf('"%s" n\'a pas de quota annuel possible.', $code));
+            }
+            if ($halfDays < 0) {
+                throw new \InvalidArgumentException(sprintf('Le quota annuel de %s ne peut être négatif, reçu %d.', $code, $halfDays));
+            }
+        }
+
         $this->pauseMinimale = $pauseMinimale;
         $this->fenetreDebut = $fenetreDebut;
         $this->fenetreFin = $fenetreFin;
@@ -199,6 +234,7 @@ final class Settings
         $this->finApresMidiTeletravail = $finApresMidiTeletravail;
         sort($joursDeRepos);
         $this->joursDeRepos = $joursDeRepos;
+        $this->quotasAnnuels = $quotasAnnuels;
     }
 
     public function id(): ?int
@@ -257,6 +293,19 @@ final class Settings
     public function estJourDeRepos(\DateTimeImmutable $date): bool
     {
         return \in_array((int) $date->format('N'), $this->joursDeRepos, true);
+    }
+
+    /**
+     * @return array<string, int> quota annuel en demi-jours, indexé par valeur de {@see DayEventCode}
+     */
+    public function quotasAnnuels(): array
+    {
+        return $this->quotasAnnuels;
+    }
+
+    public function quotaAnnuel(DayEventCode $code): DayQuantity
+    {
+        return DayQuantity::ofHalfDays($this->quotasAnnuels[$code->value] ?? 0);
     }
 
     /** Les 7 jours de la semaine, moins les jours de repos déclarés. */
