@@ -43,6 +43,7 @@
     .balances-panel table { width: 100%; border-collapse: collapse; font-size: .88rem; }
     .balances-panel th, .balances-panel td { text-align: left; padding: .4rem 0; border-bottom: 1px solid var(--gridline); }
     .balances-panel td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+    .balances-panel h3 { font-size: .92rem; margin: 1.2rem 0 .5rem; }
     .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; gap: 1rem; }
     .nav a { text-decoration: none; font-weight: 600; font-size: .9rem; white-space: nowrap; }
     h1 { font-size: 1.3rem; margin: 0; text-align: center; }
@@ -366,7 +367,7 @@
 
     <aside class="balances-panel">
         <h2>Compteurs</h2>
-        <table>
+        <table class="balances-table">
             <thead>
                 <tr><th>Compteur</th><th class="num">Solde</th></tr>
             </thead>
@@ -375,6 +376,22 @@
                     <tr>
                         <td>{{ balance.counter.label }}</td>
                         <td class="num">{{ balance.amount.value|duree }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h3>Jours posés en {{ quotaYear }}</h3>
+        <table>
+            <thead>
+                <tr><th>Type</th><th class="num">Utilisé</th><th class="num">Restant</th></tr>
+            </thead>
+            <tbody>
+                {% for overview in eventQuotas %}
+                    <tr>
+                        <td>{{ overview.code.label }}</td>
+                        <td class="num">{{ overview.used.toLabel }}</td>
+                        <td class="num">{{ overview.remaining.toLabel }}</td>
                     </tr>
                 {% endfor %}
             </tbody>
