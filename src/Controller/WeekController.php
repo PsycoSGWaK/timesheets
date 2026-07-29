@@ -72,9 +72,18 @@ final class WeekController extends AbstractController
 
         $workWeek = $this->weekLoader->load($user, $dates, $today, $settings);
 
+        $remainingWorkingDays = $this->countRemainingWorkingDays($dates, $today, $settings);
+        $workedMinutes = $workWeek->weekFact()->workedMinutes();
+
+        $projectionReference = $this->projectionCalculator->project(
+            $workedMinutes,
+            $remainingWorkingDays,
+            $settings,
+            $settings->weeklyReference(),
+        );
         $projection = $this->projectionCalculator->project(
-            $workWeek->weekFact()->workedMinutes(),
-            $this->countRemainingWorkingDays($dates, $today, $settings),
+            $workedMinutes,
+            $remainingWorkingDays,
             $settings,
         );
 
@@ -83,6 +92,7 @@ final class WeekController extends AbstractController
 
         return $this->render('week/index.html.twig', [
             'workWeek' => $workWeek,
+            'projectionReference' => $projectionReference,
             'projection' => $projection,
             'week' => $week,
             'monday' => $monday,
