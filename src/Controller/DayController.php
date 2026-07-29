@@ -4,14 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Domain\Projection\LeaveEstimate;
-use App\Domain\Projection\LeaveTimeCalculator;
 use App\Domain\Time\Minutes;
 use App\Entity\PunchEvent;
-use App\Entity\Settings;
 use App\Entity\User;
-use App\Repository\PunchEventRepository;
-use App\Repository\SettingsRepository;
+use App\Week\DayEditPanelLoader;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,9 +16,11 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 /**
- * L'écran d'un jour : saisir ou corriger ses pointages, avec la projection
- * « quand partir » intégrée dès que matin/midi/après-midi sont connus
- * (spec §4.6 — l'usage principal de l'application, jusqu'ici sans aucune IHM).
+ * Enregistre les pointages saisis pour un jour. L'édition elle-même vit désormais
+ * dans le panneau intégré à « Ma semaine » ({@see \App\Week\DayEditPanelLoader}) —
+ * cette route ne fait plus que rediriger vers la semaine du jour concerné, pour ne
+ * jamais faire perdre le contexte de la semaine qu'on modifiait (règle du
+ * 29/07/2026, avant : on retombait systématiquement sur la semaine courante).
  *
  * Un pointage réel (collé depuis ADP) ne se touche jamais. Ce qu'on saisit ici
  * dépend de l'état de la journée : combler un créneau vide sur une journée déjà
@@ -32,35 +30,23 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
  */
 final class DayController extends AbstractController
 {
-    /** Champ du formulaire => rang du pointage (spec §1.1 : Matin/Midi/Après-Midi/Soir). */
-    private const FIELDS = ['matin' => 1, 'midi' => 2, 'apres_midi' => 3, 'soir' => 4];
-
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly PunchEventRepository $punches,
-        private readonly SettingsRepository $settingsRepository,
-        private readonly LeaveTimeCalculator $leaveTimeCalculator,
+        private readonly DayEditPanelLoader $panelLoader,
     ) {
     }
 
     #[Route('/jour/{date}', name: 'day', requirements: ['date' => '\d{4}-\d{2}-\d{2}'], methods: ['GET'])]
-    public function show(string $date, #[CurrentUser] User $user): Response
+    public function show(string $date): Response
     {
-        $day = new \DateTimeImmutable($date);
-        $byRang = $this->punchesByRang($user, $day);
-
-        return $this->render('day/index.html.twig', [
-            'date' => $day,
-            'slots' => $this->slots($byRang),
-            'estimate' => $this->estimate($byRang, $this->settingsRepository->forUser($user)),
-        ]);
+        return $this->redirectToWeekWithDay($date);
     }
 
     #[Route('/jour/{date}', name: 'day_save', requirements: ['date' => '\d{4}-\d{2}-\d{2}'], methods: ['POST'])]
     public function save(string $date, Request $request, #[CurrentUser] User $user): Response
     {
         $day = new \DateTimeImmutable($date);
-        $byRang = $this->punchesByRang($user, $day);
+        $byRang = $this->panelLoader->punchesByRang($user, $day);
         // La nature de la saisie se décide sur l'état de la journée AVANT modification :
         // combler un trou sur du réel est une correction, pas une hypothèse.
         $dayHasReal = $this->hasAnyRealPunch($byRang);
@@ -68,7 +54,7 @@ final class DayController extends AbstractController
         $toRemove = [];
         $toCreate = [];
 
-        foreach (self::FIELDS as $field => $rang) {
+        foreach (DayEditPanelLoader::FIELDS as $field => $rang) {
             $existing = $byRang[$rang] ?? null;
             if (null !== $existing && $existing->isProbative()) {
                 continue; // un pointage réel ne se touche jamais
@@ -109,20 +95,7 @@ final class DayController extends AbstractController
         }
         $this->entityManager->flush();
 
-        return $this->redirectToRoute('day', ['date' => $date]);
-    }
-
-    /**
-     * @return array<int, PunchEvent> le pointage de chaque rang occupé, 1 à 4
-     */
-    private function punchesByRang(User $user, \DateTimeImmutable $day): array
-    {
-        $byRang = [];
-        foreach ($this->punches->findByDates($user, [$day]) as $punch) {
-            $byRang[$punch->rang()] = $punch;
-        }
-
-        return $byRang;
+        return $this->redirectToWeekWithDay($date);
     }
 
     /**
@@ -139,40 +112,14 @@ final class DayController extends AbstractController
         return false;
     }
 
-    /**
-     * @param array<int, PunchEvent> $byRang
-     *
-     * @return list<array{field: string, value: string, readonly: bool}>
-     */
-    private function slots(array $byRang): array
+    private function redirectToWeekWithDay(string $date): Response
     {
-        $slots = [];
-        foreach (self::FIELDS as $field => $rang) {
-            $punch = $byRang[$rang] ?? null;
-            $slots[] = [
-                'field' => $field,
-                'value' => $punch?->time()->toClock() ?? '',
-                'readonly' => $punch?->isProbative() ?? false,
-            ];
-        }
+        $day = new \DateTimeImmutable($date);
 
-        return $slots;
-    }
-
-    /**
-     * @param array<int, PunchEvent> $byRang
-     */
-    private function estimate(array $byRang, Settings $settings): ?LeaveEstimate
-    {
-        if (!isset($byRang[1], $byRang[2], $byRang[3])) {
-            return null;
-        }
-
-        return $this->leaveTimeCalculator->estimate(
-            $byRang[1]->time(),
-            $byRang[2]->time(),
-            $byRang[3]->time(),
-            $settings,
-        );
+        return $this->redirectToRoute('week', [
+            'year' => (int) $day->format('o'),
+            'week' => (int) $day->format('W'),
+            'jour' => $date,
+        ]);
     }
 }

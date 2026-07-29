@@ -75,6 +75,45 @@ final class WeekControllerTest extends WebTestCase
     }
 
     #[Test]
+    public function no_day_panel_is_shown_without_a_selected_day(): void
+    {
+        $this->client->request('GET', '/semaine/2026/30');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorNotExists('.day-panel');
+    }
+
+    #[Test]
+    public function selecting_a_day_via_the_query_parameter_shows_its_edit_panel(): void
+    {
+        $this->client->request('GET', '/semaine/2026/30', ['jour' => '2026-07-20']);
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('.day-panel');
+        self::assertSelectorTextContains('.day-panel h2', '20/07/2026');
+        self::assertSelectorExists('.day-panel input[name="matin"]:not([readonly])');
+    }
+
+    #[Test]
+    public function an_unreadable_day_query_parameter_is_ignored_rather_than_erroring(): void
+    {
+        $this->client->request('GET', '/semaine/2026/30', ['jour' => 'n-importe-quoi']);
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorNotExists('.day-panel');
+    }
+
+    #[Test]
+    public function each_day_row_links_to_its_own_week_with_the_day_selected(): void
+    {
+        $crawler = $this->client->request('GET', '/semaine/2026/30');
+
+        self::assertResponseIsSuccessful();
+        $href = $crawler->filter('tbody tr')->first()->filter('a')->attr('href');
+        self::assertSame('/semaine/2026/30?jour=2026-07-20', $href);
+    }
+
+    #[Test]
     public function it_jumps_directly_to_the_week_picked_in_the_native_picker(): void
     {
         // <input type="week"> soumet un format YYYY-Www.

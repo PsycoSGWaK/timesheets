@@ -4,7 +4,36 @@
 
 {% block stylesheets %}
 <style>
-    main { max-width: 920px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+    main { max-width: {{ dayPanel ? '1200px' : '920px' }}; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+    .week-layout { display: flex; gap: 1.5rem; align-items: flex-start; }
+    .week-main { flex: 1 1 auto; min-width: 0; }
+
+    .day-panel {
+        flex: 0 0 300px; background: var(--surface-card); border: 1px solid var(--gridline);
+        border-radius: 10px; padding: 1.1rem 1.25rem; position: sticky; top: 1.5rem;
+    }
+    .day-panel h2 { font-size: 1.05rem; margin: 0 0 .2rem; }
+    .day-panel .close-link { display: inline-block; margin-bottom: .9rem; font-size: .82rem; text-decoration: none; }
+    .day-panel .hint { font-size: .78rem; color: var(--text-muted); margin: 0 0 .9rem; }
+    .day-panel label { display: block; font-weight: 600; font-size: .85rem; margin: .7rem 0 .25rem; color: var(--text-primary); }
+    .day-panel input[type=time] {
+        width: 100%; box-sizing: border-box;
+        background: var(--surface-1); color: var(--text-primary);
+        border: 1px solid var(--gridline); border-radius: 8px;
+        padding: .4rem .5rem; font: inherit; font-size: .95rem;
+        font-variant-numeric: tabular-nums;
+    }
+    .day-panel input[type=time][readonly] { background: var(--surface-1); color: var(--text-secondary); border-style: dashed; }
+    .day-panel button[type=submit] {
+        margin-top: 1rem; width: 100%; padding: .5rem 1rem; border: 0; border-radius: 8px;
+        background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 600; cursor: pointer;
+    }
+    .day-panel .leave-estimate {
+        margin-top: 1.1rem; padding: .9rem 1rem; border: 1px solid var(--gridline);
+        background: var(--surface-1); border-radius: 8px;
+    }
+    .day-panel .leave-estimate .leave { font-size: 1.5rem; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+    .day-panel .leave-estimate ul { margin: .6rem 0 0; padding-left: 1.1rem; color: var(--text-secondary); font-size: .82rem; line-height: 1.5; }
     .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; gap: 1rem; }
     .nav a { text-decoration: none; font-weight: 600; font-size: .9rem; white-space: nowrap; }
     h1 { font-size: 1.3rem; margin: 0; text-align: center; }
@@ -134,6 +163,42 @@
         <p class="error">{{ message }}</p>
     {% endfor %}
 
+    <div class="week-layout">
+    {% if dayPanel %}
+        {% set dayLabels = {'matin': 'Matin (prise de poste)', 'midi': 'Midi (départ pause)', 'apres_midi': 'Après-midi (retour pause)', 'soir': 'Soir (fin de journée)'} %}
+        <aside class="day-panel">
+            <a class="close-link" href="{{ path('week', {year: monday|date('o'), week: week}) }}">← Fermer</a>
+            <h2>{{ jours[dayPanel.date|date('N')] }} {{ dayPanel.date|date('d/m/Y') }}</h2>
+            <p class="hint">Les créneaux grisés sont des pointages réels : ils ne se modifient pas ici.</p>
+            <form method="post" action="{{ path('day_save', {date: dayPanel.date|date('Y-m-d')}) }}">
+                {% for slot in dayPanel.slots %}
+                    <label for="panel-{{ slot.field }}">{{ dayLabels[slot.field] }}</label>
+                    <input
+                        type="time"
+                        id="panel-{{ slot.field }}"
+                        name="{{ slot.field }}"
+                        value="{{ slot.value }}"
+                        {%- if slot.readonly %} readonly{% endif %}
+                    >
+                {% endfor %}
+                <button type="submit">Enregistrer</button>
+            </form>
+            {% if dayPanel.estimate %}
+                <div class="leave-estimate">
+                    <div>Tu peux partir à</div>
+                    <div class="leave">{{ dayPanel.estimate.expectedLeave.toClock }}</div>
+                    <ul>
+                        <li>Travail du matin : {{ dayPanel.estimate.morningWorked.value|duree }}</li>
+                        <li>Pause : {{ dayPanel.estimate.breakDuration.value|duree }}{% if dayPanel.estimate.breakPenalty.value > 0 %}
+                            (pénalité de {{ dayPanel.estimate.breakPenalty.value|duree }}){% endif %}</li>
+                        <li>Objectif visé : {{ dayPanel.estimate.objective.value|duree }}</li>
+                    </ul>
+                </div>
+            {% endif %}
+        </aside>
+    {% endif %}
+    <div class="week-main">
+
     <div class="nav">
         <a href="{{ path('week', {year: previous.year, week: previous.week}) }}">← Semaine {{ previous.week }}</a>
         <div>
@@ -229,7 +294,7 @@
                 {% set reco = day.reconciliation %}
                 {% set tone = statusTone[reco.status.value] ?? 'muted' %}
                 <tr class="{{ reco.needsAttention ? 'row-' ~ tone : '' }}">
-                    <td><a href="{{ path('day', {date: day.date|date('Y-m-d')}) }}">{{ jours[day.date|date('N')] }} {{ day.date|date('d/m') }}</a></td>
+                    <td><a href="{{ path('week', {year: monday|date('o'), week: week, jour: day.date|date('Y-m-d')}) }}">{{ jours[day.date|date('N')] }} {{ day.date|date('d/m') }}</a></td>
                     <td>
                         {% if reco.status.value == 'repos' %}
                             <span class="event-badge event-badge--repos">Repos</span>
@@ -287,5 +352,8 @@
     </table>
 
     <a class="back-link" href="{{ path('import') }}">← Coller un nouveau pointage</a>
+
+    </div>
+    </div>
 </main>
 {% endblock %}
