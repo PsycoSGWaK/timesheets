@@ -148,6 +148,22 @@ final class WorkWeekAssemblerTest extends TestCase
     }
 
     #[Test]
+    public function a_rest_day_is_never_valued_even_with_a_lingering_event(): void
+    {
+        // Dimanche 26/07, jour de repos par défaut : un événement resté en base
+        // (déclaré avant que ce jour devienne repos) ne doit plus compter.
+        $events = [
+            '2026-07-26' => DayEvent::declare($this->user, new \DateTimeImmutable('2026-07-26'), DayEventCode::Teletravail),
+        ];
+
+        $week = $this->assemble([], [], $events);
+
+        $sunday = $week->days()[6];
+        self::assertSame(0, $sunday->dayFact()->workedMinutes()->value());
+        self::assertSame(ReconciliationStatus::Repos, $sunday->reconciliation()->status());
+    }
+
+    #[Test]
     public function a_day_without_any_event_exposes_none(): void
     {
         $week = $this->assemble([], []);
