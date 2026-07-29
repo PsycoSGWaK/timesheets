@@ -6,13 +6,10 @@ namespace App\Controller;
 
 use App\Domain\Projection\WeekProjectionCalculator;
 use App\Domain\Week\IsoWeek;
-use App\Domain\Work\WorkWeekAssembler;
 use App\Entity\Settings;
 use App\Entity\User;
-use App\Repository\DayEventRepository;
-use App\Repository\EmployerReadingRepository;
-use App\Repository\PunchEventRepository;
 use App\Repository\SettingsRepository;
+use App\Week\WeekLoader;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -27,11 +24,8 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
 final class WeekController extends AbstractController
 {
     public function __construct(
-        private readonly PunchEventRepository $punches,
-        private readonly EmployerReadingRepository $readings,
-        private readonly DayEventRepository $events,
         private readonly SettingsRepository $settingsRepository,
-        private readonly WorkWeekAssembler $assembler,
+        private readonly WeekLoader $weekLoader,
         private readonly WeekProjectionCalculator $projectionCalculator,
         private readonly ClockInterface $clock,
     ) {
@@ -76,14 +70,7 @@ final class WeekController extends AbstractController
         $today = $this->today();
         $settings = $this->settingsRepository->forUser($user);
 
-        $workWeek = $this->assembler->assemble(
-            $dates,
-            $this->punches->findByDates($user, $dates),
-            $this->readings->latestMinutesByDates($user, $dates),
-            $this->events->findByDates($user, $dates),
-            $today,
-            $settings,
-        );
+        $workWeek = $this->weekLoader->load($user, $dates, $today, $settings);
 
         $projection = $this->projectionCalculator->project(
             $workWeek->weekFact()->workedMinutes(),

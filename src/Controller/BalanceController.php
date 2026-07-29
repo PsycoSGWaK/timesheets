@@ -12,10 +12,8 @@ use App\Domain\Work\WorkWeekAssembler;
 use App\Entity\BalanceMovement;
 use App\Entity\User;
 use App\Repository\BalanceMovementRepository;
-use App\Repository\DayEventRepository;
-use App\Repository\EmployerReadingRepository;
-use App\Repository\PunchEventRepository;
 use App\Repository\SettingsRepository;
+use App\Week\WeekLoader;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Clock\ClockInterface;
@@ -37,12 +35,9 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
 final class BalanceController extends AbstractController
 {
     public function __construct(
-        private readonly PunchEventRepository $punches,
-        private readonly EmployerReadingRepository $readings,
-        private readonly DayEventRepository $events,
         private readonly SettingsRepository $settingsRepository,
         private readonly BalanceMovementRepository $balances,
-        private readonly WorkWeekAssembler $assembler,
+        private readonly WeekLoader $weekLoader,
         private readonly EntityManagerInterface $entityManager,
         private readonly ClockInterface $clock,
     ) {
@@ -158,15 +153,9 @@ final class BalanceController extends AbstractController
     {
         $dates = IsoWeek::dates($year, $week);
         $settings = $this->settingsRepository->forUser($user);
+        $today = $this->clock->now()->setTime(0, 0, 0);
 
-        return $this->assembler->assemble(
-            $dates,
-            $this->punches->findByDates($user, $dates),
-            $this->readings->latestMinutesByDates($user, $dates),
-            $this->events->findByDates($user, $dates),
-            $this->clock->now()->setTime(0, 0, 0),
-            $settings,
-        )->weekFact();
+        return $this->weekLoader->load($user, $dates, $today, $settings)->weekFact();
     }
 
     /**
