@@ -49,6 +49,50 @@ final class SettingsControllerTest extends WebTestCase
         $checked = $crawler->filter('input[name="jours_de_repos[]"]:checked')->extract(['value']);
         sort($checked);
         self::assertSame(['6', '7'], $checked);
+        self::assertSame('0', $crawler->filter('input[name="quota_cp"]')->attr('value'));
+        self::assertSame('0', $crawler->filter('input[name="quota_tt"]')->attr('value'));
+        self::assertSame('0', $crawler->filter('input[name="quota_rtt"]')->attr('value'));
+        self::assertSame('0', $crawler->filter('input[name="quota_jf"]')->attr('value'));
+    }
+
+    #[Test]
+    public function saving_annual_quotas_persists_and_redisplays_them(): void
+    {
+        $this->client->request('POST', '/parametres', [
+            'pause_minimale' => '00:30', 'fenetre_debut' => '11:30', 'fenetre_fin' => '14:00',
+            'journee_reference_contractuelle' => '07:00', 'journee_reference_effective' => '07:24',
+            'rtt_max' => '02:00', 'fin_apres_midi_teletravail' => '16:00',
+            'jours_de_repos' => ['6', '7'],
+            'quota_cp' => '25', 'quota_tt' => '48,5', 'quota_rtt' => '10', 'quota_jf' => '11',
+        ]);
+
+        self::assertResponseRedirects('/parametres');
+        $this->client->followRedirect();
+
+        $settings = $this->entityManager->getRepository(Settings::class)->findOneBy([]);
+        self::assertNotNull($settings);
+        self::assertSame(50, $settings->quotasAnnuels()['CP']);
+        self::assertSame(97, $settings->quotasAnnuels()['TT']);
+
+        $crawler = $this->client->request('GET', '/parametres');
+        self::assertSame('25', $crawler->filter('input[name="quota_cp"]')->attr('value'));
+        self::assertSame('48,5', $crawler->filter('input[name="quota_tt"]')->attr('value'));
+    }
+
+    #[Test]
+    public function an_unreadable_quota_is_rejected_without_saving(): void
+    {
+        $this->client->request('POST', '/parametres', [
+            'pause_minimale' => '00:30', 'fenetre_debut' => '11:30', 'fenetre_fin' => '14:00',
+            'journee_reference_contractuelle' => '07:00', 'journee_reference_effective' => '07:24',
+            'rtt_max' => '02:00', 'fin_apres_midi_teletravail' => '16:00',
+            'jours_de_repos' => ['6', '7'],
+            'quota_cp' => 'vingt-cinq',
+        ]);
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('.error');
+        self::assertSame(0, $this->entityManager->getRepository(Settings::class)->count([]));
     }
 
     #[Test]

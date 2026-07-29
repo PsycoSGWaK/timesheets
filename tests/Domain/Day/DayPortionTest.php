@@ -29,4 +29,16 @@ final class DayPortionTest extends TestCase
         self::assertSame('full', DayPortion::Full->value);
         self::assertSame('half', DayPortion::Half->value);
     }
+
+    #[Test]
+    public function a_full_portion_is_two_half_days(): void
+    {
+        self::assertSame(2, DayPortion::Full->toDayQuantity()->halfDays());
+    }
+
+    #[Test]
+    public function a_half_portion_is_one_half_day(): void
+    {
+        self::assertSame(1, DayPortion::Half->toDayQuantity()->halfDays());
+    }
 }

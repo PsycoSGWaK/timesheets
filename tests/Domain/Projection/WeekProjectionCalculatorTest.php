@@ -91,6 +91,7 @@ final class WeekProjectionCalculatorTest extends TestCase
             rttMax: 2 * 60,
             finApresMidiTeletravail: 16 * 60,
             joursDeRepos: [6, 7],
+            quotasAnnuels: [],
         );
 
         $projection = (new WeekProjectionCalculator())->project(Minutes::of(2000), 0, $custom);

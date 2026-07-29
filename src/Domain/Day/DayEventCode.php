@@ -45,4 +45,16 @@ enum DayEventCode: string
             default => $settings->journeeReferenceContractuelle(),
         };
     }
+
+    /**
+     * Les codes pour lesquels un quota annuel a du sens (CP/TT/RTT/JF, demande du
+     * 29/07/2026) — CA (congé ancienneté) volontairement exclu de cette liste, sa
+     * quantité n'ayant pas été mentionnée.
+     *
+     * @return list<self>
+     */
+    public static function withAnnualQuota(): array
+    {
+        return [self::CongePaye, self::Teletravail, self::Rtt, self::JourFerie];
+    }
 }

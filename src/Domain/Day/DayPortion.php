@@ -23,4 +23,13 @@ enum DayPortion: string
             self::Half => Minutes::of(intdiv($reference->value(), 2)),
         };
     }
+
+    /** Combien de demi-journées vaut cette portion, pour le décompte annuel (spec du 29/07/2026). */
+    public function toDayQuantity(): DayQuantity
+    {
+        return match ($this) {
+            self::Full => DayQuantity::ofHalfDays(2),
+            self::Half => DayQuantity::ofHalfDays(1),
+        };
+    }
 }
