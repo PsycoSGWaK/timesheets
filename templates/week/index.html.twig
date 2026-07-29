@@ -4,7 +4,7 @@
 
 {% block stylesheets %}
 <style>
-    main { max-width: {{ dayPanel ? '1200px' : '920px' }}; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+    main { max-width: {{ dayPanel ? '1540px' : '1200px' }}; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
     .week-layout { display: flex; gap: 1.5rem; align-items: flex-start; }
     .week-main { flex: 1 1 auto; min-width: 0; }
 
@@ -34,6 +34,15 @@
     }
     .day-panel .leave-estimate .leave { font-size: 1.5rem; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
     .day-panel .leave-estimate ul { margin: .6rem 0 0; padding-left: 1.1rem; color: var(--text-secondary); font-size: .82rem; line-height: 1.5; }
+
+    .balances-panel {
+        flex: 0 0 260px; background: var(--surface-card); border: 1px solid var(--gridline);
+        border-radius: 10px; padding: 1.1rem 1.25rem; position: sticky; top: 1.5rem;
+    }
+    .balances-panel h2 { font-size: 1.05rem; margin: 0 0 .9rem; }
+    .balances-panel table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    .balances-panel th, .balances-panel td { text-align: left; padding: .4rem 0; border-bottom: 1px solid var(--gridline); }
+    .balances-panel td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
     .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; gap: 1rem; }
     .nav a { text-decoration: none; font-weight: 600; font-size: .9rem; white-space: nowrap; }
     h1 { font-size: 1.3rem; margin: 0; text-align: center; }
@@ -278,7 +287,7 @@
         </div>
     {% endfor %}
 
-    <table>
+    <table class="week-table">
         <thead>
             <tr>
                 <th>Jour</th>
@@ -354,6 +363,23 @@
     <a class="back-link" href="{{ path('import') }}">← Coller un nouveau pointage</a>
 
     </div>
+
+    <aside class="balances-panel">
+        <h2>Compteurs</h2>
+        <table>
+            <thead>
+                <tr><th>Compteur</th><th class="num">Solde</th></tr>
+            </thead>
+            <tbody>
+                {% for balance in balances %}
+                    <tr>
+                        <td>{{ balance.counter.label }}</td>
+                        <td class="num">{{ balance.amount.value|duree }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </aside>
     </div>
 </main>
 {% endblock %}

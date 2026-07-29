@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Domain\Balance\BalanceCounter;
 use App\Domain\Projection\WeekProjectionCalculator;
 use App\Domain\Week\IsoWeek;
 use App\Entity\Settings;
 use App\Entity\User;
+use App\Repository\BalanceMovementRepository;
 use App\Repository\SettingsRepository;
 use App\Week\DayEditPanel;
 use App\Week\DayEditPanelLoader;
@@ -29,6 +31,7 @@ final class WeekController extends AbstractController
         private readonly SettingsRepository $settingsRepository,
         private readonly WeekLoader $weekLoader,
         private readonly DayEditPanelLoader $dayEditPanelLoader,
+        private readonly BalanceMovementRepository $balances,
         private readonly WeekProjectionCalculator $projectionCalculator,
         private readonly ClockInterface $clock,
     ) {
@@ -97,6 +100,7 @@ final class WeekController extends AbstractController
         return $this->render('week/index.html.twig', [
             'workWeek' => $workWeek,
             'dayPanel' => $dayPanel,
+            'balances' => $this->balancesOverview($user),
             'projectionReference' => $projectionReference,
             'projection' => $projection,
             'week' => $week,
@@ -106,6 +110,23 @@ final class WeekController extends AbstractController
             'next' => ['year' => (int) $next->format('o'), 'week' => (int) $next->format('W')],
             'pickerValue' => sprintf('%04d-W%02d', $year, $week),
         ]);
+    }
+
+    /**
+     * Le solde de chaque compteur (spec §2), affiché à droite de « Ma semaine »
+     * plutôt que sur un écran séparé (règle du 29/07/2026) — même donnée que
+     * {@see BalanceController::index()}.
+     *
+     * @return list<array{counter: BalanceCounter, amount: \App\Domain\Time\Minutes}>
+     */
+    private function balancesOverview(User $user): array
+    {
+        $balances = [];
+        foreach (BalanceCounter::cases() as $counter) {
+            $balances[] = ['counter' => $counter, 'amount' => $this->balances->balanceFor($user, $counter)];
+        }
+
+        return $balances;
     }
 
     /**
