@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>timesheets — Documentation technique</title>
+<style>
+:root {
+    --blue-dark:   #0b3c6e;
+    --blue:        #1c7fc4;
+    --blue-bright: #1e9bd7;
+    --blue-icon:   #29a3e0;
+    --blue-soft:   #eaf4fb;
+    --ink:         #222;
+    --muted:       #6b7785;
+    --line:        #d7dee6;
+    --code-bg:     #f4f5f7;
+    --ok:          #1f9d55;
+    --warn:        #d97706;
+    --danger:      #d63b3b;
+    --tok-kw:      #a31515;
+    --tok-str:     #8b1a1a;
+    --tok-com:     #6a8a6a;
+    --tok-fn:      #00318f;
+}
+* { box-sizing: border-box; }
+body {
+    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    margin: 0;
+    background: #fff;
+    line-height: 1.5;
+    font-size: 14px;
+}
+.page { max-width: 920px; margin: 0 auto; padding: 0 28px 60px; }
+
+/* ---------- Bandeau de titre ---------- */
+.banner {
+    background: linear-gradient(160deg, #0a2f57 0%, #0e5390 45%, #1a8fd0 100%);
+    color: #fff;
+    border-radius: 6px;
+    padding: 26px 34px 40px;
+    margin: 28px 0 34px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.12);
+}
+.banner .brand { display:flex; align-items:center; gap:10px; font-size:15px; opacity:.95; margin-bottom:26px; }
+.banner .brand svg { width:26px; height:26px; }
+.banner h1 { font-size: 38px; font-weight: 400; margin: 0 0 14px; letter-spacing:.3px; }
+.banner .meta { font-size: 13px; opacity:.9; line-height:1.7; }
+
+/* ---------- En-têtes de section ---------- */
+.section-header {
+    display: flex; align-items: center; gap: 14px;
+    border: 1.5px solid var(--blue-bright);
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin: 34px 0 18px;
+}
+.section-header .icon {
+    flex: 0 0 auto;
+    width: 38px; height: 38px;
+    background: var(--blue-icon);
+    border-radius: 7px;
+    display:flex; align-items:center; justify-content:center;
+}
+.section-header .icon svg { width: 22px; height: 22px; fill:#fff; }
+.section-header h2 {
+    margin: 0; color: var(--blue); font-size: 19px;
+    font-weight: 700; letter-spacing:.6px; text-transform: uppercase;
+}
+
+/* ---------- Sous-sections ---------- */
+.subsection { display:flex; align-items:center; gap:9px; margin: 22px 0 10px; }
+.subsection svg { width:18px; height:18px; fill: var(--blue); flex:0 0 auto; }
+.subsection h3 { margin:0; font-size:16px; font-weight:600; color:#15334d; }
+
+p { margin: 9px 0; }
+.lead { color:#37475a; }
+ul, ol { margin: 8px 0 8px; padding-left: 22px; }
+li { margin: 3px 0; }
+code.inl { background: var(--code-bg); border:1px solid var(--line); border-radius:4px; padding:1px 5px; font-family: "Cascadia Code","Consolas",monospace; font-size:12.5px; color:#7a1f5c; }
+a { color: var(--blue); }
+
+/* ---------- Cartes ---------- */
+.card-box {
+    border:1px solid var(--line); border-radius:8px;
+    padding:14px 18px; margin:12px 0; background:#fff;
+}
+.card-box .card-title { font-weight:600; }
+.card-box .req { color: var(--danger); font-weight:600; }
+.card-box .hint { color: var(--muted); font-size:13px; margin-top:4px; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+/* ---------- Tableaux ---------- */
+table.data { width:100%; border-collapse:collapse; margin:12px 0; font-size:13px; }
+table.data th, table.data td { border:1px solid var(--line); padding:6px 9px; text-align:left; vertical-align:top; }
+table.data th { background: var(--blue-soft); color:#10456e; font-weight:600; }
+table.data tr:nth-child(even) td { background:#fafcfe; }
+table.data .pk { color:var(--blue); font-weight:700; }
+table.data .fk { color:var(--warn); font-weight:600; }
+.tbl-title { font-weight:700; color:#10456e; margin:18px 0 4px; font-size:14.5px; }
+.tbl-title .pill { background:var(--blue-soft); color:var(--blue); border-radius:10px; padding:1px 9px; font-size:11px; margin-left:8px; font-weight:600; }
+
+/* ---------- Blocs de code ---------- */
+.code-label { font-weight:600; color:#15334d; margin:14px 0 4px; }
+.code-label span { color: var(--muted); font-weight:400; }
+pre.code {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-family: "Cascadia Code","Consolas","Courier New",monospace;
+    font-size: 12.5px; line-height:1.55;
+    color:#1f2937; margin: 6px 0 18px;
+}
+pre.code .c { color: var(--tok-com); font-style: italic; }
+pre.code .k { color: var(--tok-kw); font-weight:600; }
+pre.code .s { color: var(--tok-str); }
+pre.code .f { color: var(--tok-fn); font-weight:600; }
+pre.code .n { color:#0a7d2c; }
+
+/* ---------- Encadrés ---------- */
+.note { border-left:4px solid var(--blue-bright); background:var(--blue-soft); padding:10px 14px; border-radius:0 6px 6px 0; margin:14px 0; }
+.note.warn { border-left-color: var(--warn); background:#fdf6ec; }
+.note.ok   { border-left-color: var(--ok);   background:#eef9f1; }
+.note strong { color:#15334d; }
+
+/* ---------- Diagrammes ---------- */
+.diagram { border:1px solid var(--line); border-radius:8px; padding:14px; margin:16px 0; background:#fcfdff; }
+.diagram svg { width:100%; height:auto; display:block; }
+.diagram .cap { text-align:center; color:var(--muted); font-size:12.5px; margin-top:8px; }
+
+.toc { columns:2; column-gap:34px; margin:10px 0 4px; }
+.toc a { display:block; padding:3px 0; text-decoration:none; color:#22516f; }
+.toc a b { color:var(--blue); }
+
+/* ---------- Impression ---------- */
+@page { size: A4; margin: 14mm 12mm; }
+@media print {
+    .page { max-width:none; padding:0; }
+    .banner { box-shadow:none; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .section-header, .section-header .icon, table.data th, .note, .diagram,
+    pre.code, table.data tr:nth-child(even) td, .card-box, .tbl-title .pill {
+        -webkit-print-color-adjust:exact; print-color-adjust:exact;
+    }
+
+    h2, h3 {
+        break-after: avoid;   page-break-after: avoid;
+        break-inside: avoid;  page-break-inside: avoid;
+    }
+    .section-header,
+    .subsection,
+    .tbl-title,
+    .code-label {
+        break-after: avoid;   page-break-after: avoid;
+        break-inside: avoid;  page-break-inside: avoid;
+    }
+
+    table.data, pre.code, .diagram, .card-box, .note, .grid2, .toc, li {
+        break-inside: avoid;  page-break-inside: avoid;
+    }
+
+    .keep { break-inside: avoid;  page-break-inside: avoid; }
+
+    .section-header + p,
+    .subsection + p,
+    .subsection + ul,
+    .subsection + pre.code,
+    .subsection + table.data,
+    .subsection + .diagram,
+    .tbl-title + table.data {
+        break-before: avoid;  page-break-before: avoid;
+    }
+
+    p, li { orphans: 3; widows: 3; }
+
+    .sec { break-inside: auto; }
+    .pagebreak { break-before: page; page-break-before: always; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="banner">
+    <div class="brand">
+        <svg viewBox="0 0 24 24" fill="#fff"><path d="M4 5a2 2 0 0 1 2-2h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5zm10 .5V9h3.5L14 5.5zM7 12h10v1.6H7V12zm0 3.4h10V17H7v-1.6z"/></svg>
+        Documentation
+    </div>
+    <h1>timesheets — Documentation technique</h1>
+    <div class="meta">
+        Version : 1<br>
+        Application : recalcul indépendant des pointages ADP, pour repérer les écarts (dont les journées perdues à 0:00) qu'un décompte fondé sur le seul relevé de l'employeur ne peut pas voir<br>
+        Stack : PHP 8.4 / Symfony 7.4 / Doctrine ORM 3.6 / MariaDB 11.4 / hébergement mutualisé o2switch<br>
+        Dernière mise à jour : 29/07/2026
+    </div>
+</div>
+
+<div class="card-box">
+    <div class="card-title">Sommaire</div>
+    <div class="toc">
+        <a href="#s1"><b>1.</b> Présentation du projet</a>
+        <a href="#s2"><b>2.</b> Architecture &amp; arborescence</a>
+        <a href="#s3"><b>3.</b> Base de données</a>
+        <a href="#s4"><b>4.</b> Sécurité</a>
+        <a href="#s5"><b>5.</b> Parcours &amp; pages</a>
+        <a href="#s6"><b>6.</b> Import ADP : le mécanisme central</a>
+        <a href="#s7"><b>7.</b> Aspect transverse : append-only</a>
+        <a href="#s8"><b>8.</b> Installation &amp; déploiement</a>
+        <a href="#s9"><b>9.</b> Schémas &amp; diagrammes</a>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 1. PRESENTATION -->
+<!-- ============================================================ -->
+<div class="sec" id="s1">
+<div class="section-header">
+    <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+    <h2>1. Présentation du projet</h2>
+</div>
+
+<p class="lead">
+timesheets est une application personnelle de gestion du temps de travail. Le point de départ
+est concret : ADP (la pointeuse/l'outil RH de l'employeur) fait parfois disparaître une journée
+entière de son propre décompte — une journée où l'utilisateur a réellement travaillé s'affiche
+à <code class="inl">0:00</code> côté ADP. Sans recalcul indépendant, cette perte est invisible.
+</p>
+
+<p>L'application recalcule chaque journée à partir des horodatages bruts (matin / départ pause /
+retour de pause / soir), applique les mêmes règles métier qu'ADP (pause minimale, fenêtre de
+pause autorisée, seuils hebdomadaires 35h/37h, acquisition de RTT), puis compare son résultat au
+total qu'affiche ADP pour la même journée. Tout écart est mis en évidence, avec un statut explicite
+plutôt qu'un simple chiffre différent.</p>
+
+<div class="subsection">
+    <svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 1 5 5v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h1V7a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v3h6V7a3 3 0 0 0-3-3z"/></svg>
+    <h3>Fonctionnalités principales</h3>
+</div>
+<ul>
+    <li><strong>Import ADP</strong> — coller le texte copié depuis la « Fiche de présence » MonADP
+        (la pointeuse n'a pas d'export natif), aperçu de ce qui a été compris, puis import
+        idempotent (recoller la même semaine ne duplique rien).</li>
+    <li><strong>Recalcul indépendant jour/semaine</strong> — pause, anomalies (badgeage manquant,
+        pause hors fenêtre, pause trop courte, intervalle négatif), acquisition RTT, heures
+        supplémentaires — confronté au relevé ADP avec un statut de rapprochement par jour.</li>
+    <li><strong>Événements du jour</strong> — congé payé, congé ancienneté, RTT posé, jour férié,
+        télétravail, en jour plein ou demi-journée (la demi-journée de télétravail est calculée
+        sur les horaires réels saisis, pas sur une simple moitié forfaitaire).</li>
+    <li><strong>Jours de repos configurables</strong> — samedi/dimanche par défaut, mais tout
+        autre jour ISO peut être déclaré jour de repos ; les seuils hebdomadaires et les
+        projections s'adaptent en conséquence.</li>
+    <li><strong>Compteurs</strong> — un ledger append-only pour le RTT (crédité par semaine,
+        débité quand un jour RTT est posé) et pour les trois destinées des heures supplémentaires
+        (récupération, variable, paiement).</li>
+    <li><strong>Mode prévisionnel</strong> — « à quelle heure je pars ? » et projection de fin de
+        semaine, à partir d'horaires saisis à l'avance (jamais mélangés aux totaux officiels).</li>
+    <li><strong>Comptes multiples et cloisonnés</strong> — chaque utilisateur ne voit que ses
+        propres données ; pas d'inscription publique, les comptes se créent en ligne de commande.</li>
+</ul>
+
+<div class="subsection">
+    <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-2h2zm0-4h-2V7h2z"/></svg>
+    <h3>Public visé</h3>
+</div>
+<p>Application personnelle, actuellement utilisée par un seul foyer d'utilisateurs, mais conçue
+dès le départ pour héberger plusieurs comptes indépendants : le modèle de données isole chaque
+donnée (pointage, relevé, événement, compteur) par utilisateur, sans hypothèse de compte unique
+codée en dur.</p>
+
+<div class="note">
+    <strong>Choix structurant : ne jamais faire confiance au chiffre de l'employeur.</strong>
+    Le relevé ADP n'est jamais la donnée maître de l'application — c'est une observation
+    horodatée, conservée telle quelle (<code class="inl">EmployerReading</code>, append-only).
+    La donnée maître, c'est le pointage brut (<code class="inl">PunchEvent</code>), recalculé
+    indépendamment à chaque affichage par le domaine pur (<code class="inl">DailyCalculator</code>,
+    <code class="inl">WeeklyCalculator</code>). C'est cette indépendance de calcul qui permet de
+    détecter une journée perdue chez ADP : si l'application recalculait elle-même à partir du
+    total ADP, l'écart serait structurellement invisible.
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 2. ARCHITECTURE -->
+<!-- ============================================================ -->
+<div class="sec pagebreak" id="s2">
+<div class="section-header">
+    <div class="icon"><svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zm10 0h8v5h-8zm0 7h8v11h-8zM3 13h8v8H3z"/></svg></div>
+    <h2>2. Architecture &amp; arborescence</h2>
+</div>
+
+<p class="lead">Séparation stricte en trois couches : <code class="inl">src/Domain</code> (calcul
+pur, sans Doctrine ni HTTP, testable en mémoire), <code class="inl">src/Entity</code> +
+<code class="inl">src/Repository</code> (persistance Doctrine), <code class="inl">src/Controller</code>
++ <code class="inl">templates</code> (IHM). Les entités sont pragmatiquement passées en paramètre
+aux calculateurs du domaine — pas de séparation hexagonale stricte par DTO, mais aucune classe du
+domaine n'importe Doctrine ni ne touche à la base.</p>
+
+<div class="code-label">Arborescence <span>(dossiers et fichiers qui comptent)</span></div>
+<pre class="code"><span class="f">src/</span>
+├── <span class="f">Command/</span>            <span class="c">CreateUserCommand — seule façon de créer un compte</span>
+├── <span class="f">Controller/</span>          <span class="c">8 contrôleurs HTTP, un par écran</span>
+├── <span class="f">Domain/</span>              <span class="c">logique pure, sans Doctrine ni HTTP</span>
+│   ├── <span class="f">Adp/</span>             <span class="c">grammaire et planification de l'import (AdpParser, ImportPlanner)</span>
+│   ├── <span class="f">Balance/</span>         <span class="c">BalanceCounter (RTT / Récup. / Variable / Paiement)</span>
+│   ├── <span class="f">Day/</span>             <span class="c">DailyCalculator, DayEventValorizer, TeletravailHalfDayCalculator…</span>
+│   ├── <span class="f">Projection/</span>      <span class="c">« quand partir ? », projection de fin de semaine</span>
+│   ├── <span class="f">Punch/</span>           <span class="c">PunchNature (réel/prévisionnel), PunchOrigin (ADP/manuel)</span>
+│   ├── <span class="f">Reconciliation/</span>  <span class="c">comparaison Nous / ADP, verdict par jour</span>
+│   ├── <span class="f">Time/</span>            <span class="c">Minutes — value object central, tout se calcule en minutes entières</span>
+│   ├── <span class="f">Week/</span>            <span class="c">semaine ISO, agrégat hebdomadaire, acquisition RTT/HS</span>
+│   └── <span class="f">Work/</span>            <span class="c">WorkWeekAssembler — assemble une semaine affichable</span>
+├── <span class="f">Entity/</span>              <span class="c">7 entités Doctrine (App\Entity)</span>
+├── <span class="f">EventSubscriber/</span>     <span class="c">SecurityHeadersSubscriber — en-têtes de sécurité (voir §4)</span>
+├── <span class="f">Import/</span>              <span class="c">AdpImporter — traduit un plan en écritures Doctrine</span>
+├── <span class="f">Repository/</span>          <span class="c">un dépôt par entité</span>
+├── <span class="f">Security/</span>            <span class="c">ContentSecurityPolicyNonce — nonce CSP partagé par requête</span>
+├── <span class="f">Twig/</span>                <span class="c">MinutesExtension (filtre `duree`), SecurityExtension (`csp_nonce()`)</span>
+└── <span class="f">Week/</span>                <span class="c">WeekLoader — regroupe les 3 dépôts + WorkWeekAssembler derrière un seul load()</span>
+
+<span class="f">tests/</span>                   <span class="c">252 tests, arborescence miroir de src/</span>
+<span class="f">templates/</span>               <span class="c">Twig, un dossier par écran</span>
+<span class="f">migrations/</span>              <span class="c">8 migrations Doctrine</span>
+<span class="f">docs/</span>                    <span class="c">specification.md, source-adp.md, procédures de déploiement</span></pre>
+
+<div class="keep">
+<div class="subsection">
+    <svg viewBox="0 0 24 24"><path d="M4 4h16v4H4zm0 6h16v4H4zm0 6h10v4H4z"/></svg>
+    <h3>Pile technique</h3>
+</div>
+<table class="data">
+    <tr><th>Couche</th><th>Choix</th><th>Détail</th></tr>
+    <tr><td>Langage</td><td>PHP 8.4</td><td>enums, propriétés <code class="inl">readonly</code>, arguments nommés utilisés systématiquement</td></tr>
+    <tr><td>Framework</td><td>Symfony 7.4</td><td>form_login, routing par attributs, Twig, asset mapper (pas de npm/webpack)</td></tr>
+    <tr><td>Persistance</td><td>Doctrine ORM 3.6 + Migrations 4.0</td><td>entités mappées uniquement dans <code class="inl">src/Entity</code></td></tr>
+    <tr><td>Base de données</td><td>MariaDB 11.4</td><td>ENGINE=InnoDB explicite sur chaque table (voir §3)</td></tr>
+    <tr><td>Front</td><td>Twig + Symfony UX Live Component</td><td>rendu serveur, un peu de Stimulus (thème, formulaire d'événement)</td></tr>
+    <tr><td>Horloge</td><td><code class="inl">symfony/clock</code></td><td>« aujourd'hui » toujours injecté, jamais <code class="inl">new DateTimeImmutable('today')</code> — testable de façon déterministe</td></tr>
+    <tr><td>Tests</td><td>PHPUnit 12</td><td>252 tests, 568 assertions ; TDD strict sur tout le domaine</td></tr>
+    <tr><td>Analyse statique</td><td>PHPStan niveau 6</td><td>0 erreur</td></tr>
+    <tr><td>Hébergement</td><td>o2switch (mutualisé cPanel)</td><td>PHP 8.4 CloudLinux, Document Root pointé directement sur <code class="inl">repositories/timesheets/public</code></td></tr>
+</table>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 3. BASE DE DONNEES -->
+<!-- ============================================================ -->
+<div class="sec pagebreak" id="s3">
+<div class="section-header">
+    <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 2C7 2 3 3.8 3 6v12c0 2.2 4 4 9 4s9-1.8 9-4V6c0-2.2-4-4-9-4zm7 16c0 .6-2.6 2-7 2s-7-1.4-7-2v-2.3C6.7 16.5 9.2 17 12 17s5.3-.5 7-1.3zm0-5c0 .6-2.6 2-7 2s-7-1.4-7-2v-2.3C6.7 11.5 9.2 12 12 12s5.3-.5 7-1.3zm-7-4c-4.4 0-7-1.4-7-2s2.6-2 7-2 7 1.4 7 2-2.6 2-7 2z"/></svg></div>
+    <h2>3. Base de données</h2>
+</div>
+
+<p class="lead">7 tables, 8 migrations. Toutes les données appartiennent à <code class="inl">app_user</code> ;
+aucune table ne peut exister sans utilisateur rattaché. Convention systématique : chaque migration
+crée explicitement <code class="inl">ENGINE=InnoDB</code> — les toutes premières migrations du
+projet l'omettaient, ce qui créait silencieusement des tables MyISAM sans clé étrangère ; corrigé
+et documenté pour ne pas être reproduit.</p>
+
+<div class="note warn">
+    <strong>Deux colonnes renommées à cause de mots réservés MariaDB.</strong>
+    <code class="inl">rang</code> (pas <code class="inl">rank</code>) sur <code class="inl">punch_event</code>,
+    et <code class="inl">quotite</code> (pas <code class="inl">portion</code>) sur
+    <code class="inl">day_event</code> — deux pièges rencontrés en cours de développement
+    (<code class="inl">RANK</code> et <code class="inl">FOR PORTION OF</code> sont tous deux des
+    mots-clés SQL standard). À vérifier systématiquement avant de nommer une nouvelle colonne.
+</div>
+
+<div class="grid2">
+<div>
+<div class="keep">
+<div class="tbl-title">app_user <span class="pill">racine</span></div>
+<table class="data">
+    <tr><th>Colonne</th><th>Type</th><th>Note</th></tr>
+    <tr><td class="pk">id</td><td>int</td><td>PK auto-incrément</td></tr>
+    <tr><td>email</td><td>varchar(180)</td><td>unique</td></tr>
+    <tr><td>password</td><td>varchar</td><td>hash (auto)</td></tr>
+    <tr><td>roles</td><td>json</td><td><code class="inl">["ROLE_USER"]</code></td></tr>
+</table>
+</div>
+</div>
+<div>
+<div class="keep">
+<div class="tbl-title">raw_import</div>
+<table class="data">
+    <tr><th>Colonne</th><th>Type</th><th>Note</th></tr>
+    <tr><td class="pk">id</td><td>int</td><td>PK</td></tr>
+    <tr><td class="fk">user_id</td><td>int</td><td>FK app_user</td></tr>
+    <tr><td>raw_payload</td><td>text</td><td>texte ADP collé, intégral</td></tr>
+    <tr><td>year</td><td>smallint</td><td>absent du texte source</td></tr>
+    <tr><td>imported_at</td><td>datetime</td><td></td></tr>
+</table>
+</div>
+</div>
+<p class="hint" style="color:var(--muted);font-size:12.5px;margin-top:-4px">
+Conservé intégralement pour pouvoir rejouer le parseur sur l'historique sans ressaisie, si la
+grammaire d'analyse évolue.</p>
+
+<div class="keep">
+<div class="tbl-title">settings <span class="pill">1-1 avec app_user</span></div>
+<table class="data">
+    <tr><th>Colonne</th><th>Type</th><th>Note</th></tr>
+    <tr><td class="pk">id</td><td>int</td><td>PK</td></tr>
+    <tr><td class="fk">user_id</td><td>int</td><td>FK unique (1 ligne par utilisateur)</td></tr>
+    <tr><td>pause_minimale</td><td>int (min)</td><td>défaut 30</td></tr>
+    <tr><td>fenetre_debut / fenetre_fin</td><td>int (min)</td><td>fenêtre de pause autorisée, défaut 11h30–14h00</td></tr>
+    <tr><td>journee_reference_contractuelle</td><td>int (min)</td><td>7h00 — base des absences (35h/5j)</td></tr>
+    <tr><td>journee_reference_effective</td><td>int (min)</td><td>7h24 — base du travail réel (37h/5j)</td></tr>
+    <tr><td>rtt_max</td><td>int (min)</td><td>plafond RTT/semaine, défaut 2h</td></tr>
+    <tr><td>fin_apres_midi_teletravail</td><td>int (min)</td><td>borne de la demi-journée TT après-midi, défaut 16h00</td></tr>
+    <tr><td>jours_de_repos</td><td>json</td><td>numéros ISO 1–7, défaut <code class="inl">[6, 7]</code></td></tr>
+</table>
+</div>
+<p class="hint" style="color:var(--muted);font-size:12.5px;margin-top:-4px">
+Les seuils hebdomadaires (35h/37h) ne sont volontairement <strong>pas</strong> stockés : ils se
+déduisent des journées de référence × (7 − jours de repos), pour qu'ils ne puissent jamais
+diverger d'une modification isolée.</p>
+
+<div class="keep">
+<div class="tbl-title">punch_event <span class="pill">donnée maître</span></div>
+<table class="data">
+    <tr><th>Colonne</th><th>Type</th><th>Note</th></tr>
+    <tr><td class="pk">id</td><td>int</td><td>PK</td></tr>
+    <tr><td class="fk">user_id</td><td>int</td><td>FK app_user</td></tr>
+    <tr><td>date</td><td>date</td><td></td></tr>
+    <tr><td>time</td><td>int</td><td>minutes depuis minuit, 0–1439</td></tr>
+    <tr><td>rang</td><td>smallint</td><td>1er, 2e badgeage… base 1</td></tr>
+    <tr><td>nature</td><td>varchar</td><td><code class="inl">reel</code> / <code class="inl">previsionnel</code></td></tr>
+    <tr><td>origin</td><td>varchar</td><td><code class="inl">adp</code> / <code class="inl">saisie_manuelle</code></td></tr>
+</table>
+</div>
+<p class="hint" style="color:var(--muted);font-size:12.5px;margin-top:-4px">
+Contrainte unique <code class="inl">(user_id, date, time, rang)</code> : c'est elle qui rend
+l'import ADP idempotent — recoller la même semaine ne duplique aucun pointage. Aucun setter :
+un pointage est un fait, on le remplace en le supprimant puis en en créant un nouveau.</p>
+
+<div class="keep">
+<div class="tbl-title">day_event</div>
+<table class="data">
+    <tr><th>Colonne</th><th>Type</th><th>Note</th></tr>
+    <tr><td class="pk">id</td><td>int</td><td>PK</td></tr>
+    <tr><td class="fk">user_id</td><td>int</td><td>FK app_user</td></tr>
+    <tr><td>date</td><td>date</td><td></td></tr>
+    <tr><td>code</td><td>varchar</td><td>CP / CA / RTT / JF / TT</td></tr>
+    <tr><td>quotite</td><td>varchar</td><td><code class="inl">full</code> / <code class="inl">half</code></td></tr>
+    <tr><td>half</td><td>varchar, nullable</td><td><code class="inl">matin</code> / <code class="inl">apres_midi</code> — seulement pour TT en demi-journée</td></tr>
+</table>
+</div>
+<p class="hint" style="color:var(--muted);font-size:12.5px;margin-top:-4px">
+Contrainte unique <code class="inl">(user_id, date)</code> : au plus un événement par jour ;
+en déclarer un nouveau remplace le précédent.</p>
+
+<div class="grid2">
+<div>
+<div class="keep">
+<div class="tbl-title">employer_reading</div>
+<table class="data">
+    <tr><th>Colonne</th><th>Type</th></tr>
+    <tr><td class="pk">id</td><td>int PK</td></tr>
+    <tr><td class="fk">user_id</td><td>int FK</td></tr>
+    <tr><td>date</td><td>date</td></tr>
+    <tr><td>employer_minutes</td><td>int</td></tr>
+    <tr><td>observed_at</td><td>datetime</td></tr>
+</table>
+</div>
+</div>
+<div>
+<div class="keep">
+<div class="tbl-title">balance_movement</div>
+<table class="data">
+    <tr><th>Colonne</th><th>Type</th></tr>
+    <tr><td class="pk">id</td><td>int PK</td></tr>
+    <tr><td class="fk">user_id</td><td>int FK</td></tr>
+    <tr><td>counter</td><td>varchar (rtt/recuperation/variable/paiement)</td></tr>
+    <tr><td>amount</td><td>int, signé (crédit/débit)</td></tr>
+    <tr><td>motif, date, recorded_at</td><td>text nullable / date / datetime</td></tr>
+</table>
+</div>
+</div>
+</div>
+
+<div class="note ok">
+    <strong>Convention append-only</strong>, appliquée à <code class="inl">employer_reading</code>
+    et <code class="inl">balance_movement</code> : jamais d'<code class="inl">UPDATE</code> ni de
+    <code class="inl">DELETE</code> sur l'historique, uniquement des insertions — un mouvement
+    compensateur pour « annuler », un nouveau relevé pour corriger. Voir §7 pour le détail et
+    la raison de ce choix.
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 4. SECURITE -->
+<!-- ============================================================ -->
+<div class="sec pagebreak" id="s4">
+<div class="section-header">
+    <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5.5 3.4 10.7 8 12 4.6-1.3 8-6.5 8-12V5zm0 9.9h6c-.5 3.8-2.9 7.1-6 8.4V12H6V6.3l6-2.2z"/></svg></div>
+    <h2>4. Sécurité</h2>
+</div>
+
+<div class="subsection">
+    <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4 0-8 2-8 5v2h16v-2c0-3-4-5-8-5z"/></svg>
+    <h3>Authentification</h3>
+</div>
+<ul>
+    <li><strong>Pas d'inscription publique</strong> — les comptes se créent exclusivement via
+        <code class="inl">app:user:create</code> (commande console), qui refuse un email déjà
+        utilisé et un mot de passe vide.</li>
+    <li><code class="inl">form_login</code> Symfony standard : hash de mot de passe automatique
+        (<code class="inl">auto</code>, bcrypt/argon2 selon l'environnement), pas de mot de passe
+        en clair conservé nulle part (<code class="inl">eraseCredentials()</code> volontairement vide,
+        aucun champ en clair n'existe sur l'entité <code class="inl">User</code>).</li>
+    <li><code class="inl">access_control</code> : seul <code class="inl">^/login</code> est
+        <code class="inl">PUBLIC_ACCESS</code> ; tout le reste exige <code class="inl">ROLE_USER</code>.</li>
+</ul>
+
+<div class="subsection">
+    <svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    <h3>Cloisonnement des données</h3>
+</div>
+<p>Chaque requête aux dépôts (<code class="inl">PunchEventRepository</code>,
+<code class="inl">DayEventRepository</code>, etc.) est filtrée par l'utilisateur courant
+(<code class="inl">#[CurrentUser]</code>) — aucune route n'accepte d'identifiant d'utilisateur
+en paramètre. Vérifié en conditions réelles avec deux comptes distincts : les données de l'un
+sont invisibles depuis une session de l'autre.</p>
+
+<div class="subsection">
+    <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M12 2 4 5v6c0 5.5 3.4 10.7 8 12 4.6-1.3 8-6.5 8-12V5z"/></svg>
+    <h3>CSRF</h3>
+</div>
+<p>Protection CSRF stateless activée pour tous les formulaires (<code class="inl">token_id: submit</code>)
+ainsi que pour <code class="inl">authenticate</code> et <code class="inl">logout</code> — y compris
+les actions POST « rapides » de l'écran « Ma semaine » (déclarer/retirer un événement, créditer un
+RTT), qui sont de simples boutons sans page de confirmation.</p>
+
+<div class="subsection">
+    <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zm2 4h12M6 12h12M6 16h8"/></svg>
+    <h3>Échappement des sorties</h3>
+</div>
+<p>Aucun filtre <code class="inl">|raw</code> ni équivalent dans les templates : l'échappement
+automatique de Twig s'applique partout, y compris sur le texte ADP collé par l'utilisateur et
+réaffiché en aperçu.</p>
+
+<div class="keep">
+<div class="subsection">
+    <svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5.5 3.4 10.7 8 12 4.6-1.3 8-6.5 8-12V5z"/></svg>
+    <h3>Vérifié en conditions réelles (production)</h3>
+</div>
+<div class="note ok">
+    Requêtes effectuées le 28/07/2026 contre <code class="inl">https://timesheets.idevnormandie.fr</code> :
+    <ul style="margin:6px 0 0">
+        <li><code class="inl">GET /.env</code> → <strong>403</strong> (bloqué).</li>
+        <li><code class="inl">GET /composer.json</code> et <code class="inl">/vendor/autoload.php</code>
+            → <strong>404</strong> : ces fichiers ne sont même pas dans le Document Root
+            (pointé directement sur <code class="inl">repositories/timesheets/public</code>,
+            hors de portée du web).</li>
+        <li><code class="inl">GET /import</code> sans session → <strong>302</strong> vers
+            <code class="inl">/login</code> (<code class="inl">access_control</code> effectif).</li>
+        <li>Cookie de session : <code class="inl">Secure</code>, <code class="inl">HttpOnly</code>,
+            <code class="inl">SameSite=Lax</code>.</li>
+    </ul>
+</div>
+</div>
+
+<div class="subsection">
+    <svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5.5 3.4 10.7 8 12 4.6-1.3 8-6.5 8-12V5z"/></svg>
+    <h3>En-têtes de sécurité applicatifs</h3>
+</div>
+<p><code class="inl">SecurityHeadersSubscriber</code> (<code class="inl">src/EventSubscriber</code>)
+pose sur chaque réponse ce qu'aucun bundle ni la config Symfony par défaut ne couvrait :</p>
+<ul>
+    <li><strong>Content-Security-Policy</strong> — <code class="inl">script-src</code> restreint à
+        <code class="inl">'self'</code> et un nonce généré par requête
+        (<code class="inl">ContentSecurityPolicyNonce</code>, exposé aux templates via le filtre
+        Twig <code class="inl">csp_nonce()</code>) ; <code class="inl">frame-ancestors 'none'</code>,
+        <code class="inl">object-src 'none'</code>.</li>
+    <li><strong>X-Frame-Options: DENY</strong>, <strong>X-Content-Type-Options: nosniff</strong>,
+        <strong>Referrer-Policy: strict-origin-when-cross-origin</strong>,
+        <strong>Permissions-Policy</strong> (géolocalisation/caméra/micro désactivés).</li>
+    <li><strong>Strict-Transport-Security</strong> — 1 an, sous-domaines inclus ; posé uniquement
+        si la requête est en HTTPS, pour ne pas piéger le développement local sans TLS.</li>
+</ul>
+<div class="note">
+    <strong>Compromis assumé sur <code class="inl">style-src</code>.</strong>
+    <code class="inl">'unsafe-inline'</code> plutôt qu'un nonce, pour ne pas devoir modifier les
+    huit templates qui embarquent leur propre <code class="inl">&lt;style&gt;</code>. Risque jugé
+    faible : aucune donnée utilisateur n'y est jamais interpolée, contrairement à
+    <code class="inl">script-src</code> qui reste strict (nonce, spec OWASP).
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 5. PARCOURS & PAGES -->
+<!-- ============================================================ -->
+<div class="sec pagebreak" id="s5">
+<div class="section-header">
+    <div class="icon"><svg viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg></div>
+    <h2>5. Parcours &amp; pages</h2>
+</div>
+
+<p class="lead">18 routes applicatives (hors routes techniques du profiler et des Live
+Components), issues de <code class="inl">php bin/console debug:router</code>.</p>
+
+<div class="keep">
+<div class="tbl-title">Public</div>
+<table class="data">
+    <tr><th>Route</th><th>Méthode</th><th>Chemin</th><th>Rôle</th></tr>
+    <tr><td>login</td><td>GET / POST</td><td><code class="inl">/login</code></td><td>Écran de connexion</td></tr>
+</table>
+</div>
+
+<div class="keep">
+<div class="tbl-title">Authentifié (ROLE_USER) — navigation &amp; saisie</div>
+<table class="data">
+    <tr><th>Route</th><th>Méthode</th><th>Chemin</th><th>Écran</th></tr>
+    <tr><td>home</td><td>GET</td><td><code class="inl">/</code></td><td>Redirige vers l'import</td></tr>
+    <tr><td>import</td><td>GET / POST</td><td><code class="inl">/import</code></td><td>Coller un pointage ADP, aperçu, confirmation</td></tr>
+    <tr><td>week_current</td><td>GET</td><td><code class="inl">/semaine</code></td><td>Semaine courante</td></tr>
+    <tr><td>week</td><td>GET</td><td><code class="inl">/semaine/{year}/{week}</code></td><td>Une semaine ISO donnée</td></tr>
+    <tr><td>week_goto</td><td>GET</td><td><code class="inl">/semaine/aller</code></td><td>Sélecteur natif <code class="inl">&lt;input type=week&gt;</code></td></tr>
+    <tr><td>day / day_save</td><td>GET / POST</td><td><code class="inl">/jour/{date}</code></td><td>Saisie/correction des 4 horodatages d'un jour</td></tr>
+    <tr><td>day_event_declare</td><td>POST</td><td><code class="inl">/semaine/evenement</code></td><td>Déclarer un événement (CP/CA/RTT/JF/TT)</td></tr>
+    <tr><td>day_event_remove</td><td>POST</td><td><code class="inl">/semaine/evenement/supprimer</code></td><td>Retirer l'événement du jour</td></tr>
+</table>
+</div>
+
+<div class="keep">
+<div class="tbl-title">Authentifié (ROLE_USER) — compteurs &amp; réglages</div>
+<table class="data">
+    <tr><th>Route</th><th>Méthode</th><th>Chemin</th><th>Écran</th></tr>
+    <tr><td>balances</td><td>GET</td><td><code class="inl">/compteurs</code></td><td>Soldes RTT / Récup. / Variable / Paiement</td></tr>
+    <tr><td>balance_credit_rtt</td><td>POST</td><td><code class="inl">/semaine/{year}/{week}/rtt</code></td><td>Créditer le RTT acquis de la semaine</td></tr>
+    <tr><td>balance_allocate_overtime</td><td>POST</td><td><code class="inl">/semaine/{year}/{week}/heures-sup</code></td><td>Répartir les heures sup. entre les 3 destinées</td></tr>
+    <tr><td>projection</td><td>GET / POST</td><td><code class="inl">/quand-partir</code></td><td>Calcul rapide « à quelle heure je pars ? »</td></tr>
+    <tr><td>settings / settings_save</td><td>GET / POST</td><td><code class="inl">/parametres</code></td><td>Paramétrage des seuils</td></tr>
+    <tr><td>logout</td><td>GET</td><td><code class="inl">/logout</code></td><td>Déconnexion</td></tr>
+</table>
+</div>
+
+<!-- ============================================================ -->
+<!-- 6. POINT METIER SAILLANT -->
+<!-- ============================================================ -->
+<div class="sec pagebreak" id="s6">
+<div class="section-header">
+    <div class="icon"><svg viewBox="0 0 24 24"><path d="M9 3v2H4v16h16V5h-5V3zM12 1a2 2 0 0 1 2 2 2 2 0 0 1-2 2 2 2 0 0 1-2-2 2 2 0 0 1 2-2zm-1 9h6v2h-6zm0 4h6v2h-6zm-3-4h1v2H8zm0 4h1v2H8z"/></svg></div>
+    <h2>6. Import ADP : le mécanisme central</h2>
+</div>
+
+<p class="lead">C'est le mécanisme le plus caractéristique du projet : la pointeuse ADP n'offrant
+aucun export, la seule extraction possible est une sélection de texte copiée-collée depuis
+l'écran « Fiche de présence » de MonADP. Tout le reste de l'application dépend de la fiabilité
+de cette analyse.</p>
+
+<div class="subsection">
+    <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zm2 4h12M6 12h12M6 16h8"/></svg>
+    <h3>La grammaire du texte collé</h3>
+</div>
+<p><code class="inl">AdpParser</code> nettoie d'abord le bruit d'interface (espaces insécables,
+lignes « Afficher »/« Pointage », en-têtes de jour Lun-Dim), puis découpe le texte en blocs — un
+nouveau bloc commence à chaque ligne <code class="inl">JJ/MM</code> (l'année n'apparaît pas dans
+le texte source, elle est fournie par l'utilisateur). Dans chaque bloc, seules les lignes
+<em>avant</em> le mot <code class="inl">Attendu</code> sont des pointages réels ; ce qui suit est
+l'horaire théorique, ignoré.</p>
+
+<div class="code-label">Reconnaissance ligne à ligne <span>(App\Domain\Adp\AdpParser)</span></div>
+<pre class="code"><span class="k">private const</span> DATE_LINE  <span class="s">= '#^(\d{2})/(\d{2})$#'</span>;     <span class="c">// 24/07</span>
+<span class="k">private const</span> TOTAL_LINE <span class="s">= '#^(\d{1,2}):(\d{2})h$#'</span>;  <span class="c">// 7:24h — total ADP du jour</span>
+<span class="k">private const</span> PUNCH_LINE <span class="s">= '#^\d{2}:\d{2}$#'</span>;         <span class="c">// 08:30 — un horodatage</span></pre>
+
+<div class="subsection">
+    <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4 0-8 2-8 5v2h16v-2c0-3-4-5-8-5z"/></svg>
+    <h3>L'import est idempotent</h3>
+</div>
+<p><code class="inl">ImportPlanner</code> décide, sans rien écrire, de ce que l'import doit
+produire — deux régimes distincts :</p>
+<ul>
+    <li><strong>Les pointages sont des faits, donc dédupliqués.</strong> Un pointage réel déjà
+        présent au même créneau (date, heure, rang) n'est pas recréé — recoller deux fois la même
+        semaine ne duplique rien. L'arrivée d'un pointage réel périme les pointages prévisionnels
+        de la même journée : l'hypothèse cède devant le fait constaté.</li>
+    <li><strong>Le total ADP est une observation horodatée, donc toujours ajouté.</strong> Chaque
+        import crée une nouvelle ligne <code class="inl">EmployerReading</code>, jamais une mise à
+        jour — l'historique garde la trace du type « le 24/07, ADP annonçait encore 0:00 pour le
+        23/07 », utile pour documenter une régularisation après coup.</li>
+</ul>
+
+<div class="note ok">
+    C'est cette combinaison — dédoublonnage strict des pointages + observation append-only du
+    total employeur — qui permet à l'application de détecter et de documenter le cas
+    <code class="inl">EmployerZero</code> : nous avons compté du temps de travail réel, ADP
+    affiche 0:00. Voir le diagramme de séquence en §9.
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 7. ASPECT TRANSVERSE -->
+<!-- ============================================================ -->
+<div class="sec pagebreak" id="s7">
+<div class="section-header">
+    <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+    <h2>7. Aspect transverse : l'append-only</h2>
+</div>
+
+<p class="lead">Un même principe architectural revient sur trois entités distinctes du projet :
+<strong>jamais de mutation ni de suppression sur l'historique</strong>, toujours une nouvelle
+écriture qui coexiste avec les précédentes.</p>
+
+<table class="data">
+    <tr><th>Entité</th><th>Ce qui ne change jamais</th><th>Comment on « corrige »</th></tr>
+    <tr>
+        <td><code class="inl">PunchEvent</code></td>
+        <td>Un pointage créé n'est jamais modifié — aucun setter sur l'entité.</td>
+        <td>On supprime l'ancien puis on en persiste un nouveau (deux <code class="inl">flush()</code>
+            distincts : Doctrine insère avant de supprimer au sein d'un même flush, ce qui
+            violerait la contrainte d'unicité si le remplaçant occupe le même créneau).</td>
+    </tr>
+    <tr>
+        <td><code class="inl">EmployerReading</code></td>
+        <td>Un relevé ADP observé n'est jamais écrasé.</td>
+        <td>Un nouvel import ajoute une nouvelle observation ; la plus récente
+            (<code class="inl">observedAt</code>) fait foi pour l'affichage, sans perdre les
+            précédentes.</td>
+    </tr>
+    <tr>
+        <td><code class="inl">BalanceMovement</code></td>
+        <td>Un mouvement de compteur (crédit RTT, débit RTT, allocation d'heures sup.) n'est
+            jamais supprimé.</td>
+        <td>Retirer un jour RTT posé ne supprime pas le débit d'origine : un mouvement
+            compensateur (crédit du même montant) est ajouté à côté, avec un motif explicite
+            (« Annulation : jour RTT retiré ou remplacé »). Le solde d'un compteur est
+            <code class="inl">SUM(amount)</code> sur l'historique complet.</td>
+    </tr>
+</table>
+
+<div class="note">
+    <strong>Pourquoi ce choix, systématiquement.</strong> C'est la même logique que celle qui
+    motive l'existence même du projet (§1) : un historique qu'on peut réécrire ne permet plus de
+    distinguer « ce qui s'est passé » de « ce qu'on croit aujourd'hui qu'il s'est passé ». Une
+    ligne <code class="inl">EmployerReading</code> écrasée à chaque réimport rendrait impossible
+    de documenter qu'ADP a corrigé son propre décompte après coup ; un solde de compteur recalculé
+    par mutation directe (plutôt que par somme de mouvements signés) perdrait la trace du motif de
+    chaque changement. Le coût est mineur (quelques lignes de plus en base) au regard de ce qu'il
+    achète : un audit complet, gratuit, de toute décision passée.
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 8. INSTALLATION & DEPLOIEMENT -->
+<!-- ============================================================ -->
+<div class="sec pagebreak" id="s8">
+<div class="section-header">
+    <div class="icon"><svg viewBox="0 0 24 24"><path d="M12 2 2 7v10l10 5 10-5V7zm0 2.2 7 3.5v8.6l-7 3.5-7-3.5V7.7z"/></svg></div>
+    <h2>8. Installation &amp; déploiement</h2>
+</div>
+
+<div class="keep">
+<div class="subsection">
+    <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zm2 4h12M6 12h12M6 16h8"/></svg>
+    <h3>Installation locale</h3>
+</div>
+<pre class="code"><span class="c"># dépendances</span>
+composer install
+
+<span class="c"># base de données locale (MariaDB, .env.local à renseigner)</span>
+php bin/console doctrine:migrations:migrate
+
+<span class="c"># créer un premier compte — pas d'inscription publique</span>
+php bin/console app:user:create moi@exemple.fr
+
+<span class="c"># serveur de dev</span>
+symfony server:start --no-tls --port=8000</pre>
+</div>
+<p>Base de test dédiée (<code class="inl">.env.test.local</code>, non versionné) — le schéma de
+test est recréé à chaque exécution via <code class="inl">SchemaTool</code>, indépendamment des
+migrations, par le trait <code class="inl">tests/ResetsSchema.php</code> partagé par tous les tests
+fonctionnels et d'intégration.</p>
+
+<div class="keep">
+<div class="subsection">
+    <svg viewBox="0 0 24 24"><path d="M12 2 2 7v10l10 5 10-5V7z"/></svg>
+    <h3>Hébergement de production</h3>
+</div>
+<table class="data">
+    <tr><th></th><th></th></tr>
+    <tr><td>URL</td><td><code class="inl">https://timesheets.idevnormandie.fr</code></td></tr>
+    <tr><td>Hébergeur</td><td>o2switch, mutualisé cPanel / CloudLinux</td></tr>
+    <tr><td>Document Root</td><td><code class="inl">~/repositories/timesheets/public</code> — pointé directement, sans lien symbolique (le vhost de ce sous-domaine refuse <code class="inl">FollowSymLinks</code>, sans recours via <code class="inl">.htaccess</code>)</td></tr>
+    <tr><td>Base</td><td>MariaDB 11.4, utilisateur MySQL dédié à cette seule application</td></tr>
+    <tr><td>Logs</td><td>Fichier (<code class="inl">var/log/prod.log</code>, JSON) et non <code class="inl">stderr</code> — sur cet hébergement mutualisé, stderr n'atterrit dans aucun journal consultable</td></tr>
+</table>
+</div>
+
+<div class="subsection">
+    <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zm2 4h12M6 12h12M6 16h8"/></svg>
+    <h3>Déploiement continu</h3>
+</div>
+<p>Déclenché par un push sur <code class="inl">main</code> (GitHub Actions), vers un hébergement
+mutualisé sans accès SSH permanent. Trois principes :</p>
+<ol>
+    <li>Tout ce qui est coûteux ou fragile (<code class="inl">composer install</code>, compilation
+        des assets) tourne sur le runner GitHub, jamais sur l'hébergement mutualisé — les
+        extensions PHP d'o2switch se réinitialisent aux mises à jour de build et cassaient
+        régulièrement Composer en exécution directe sur le serveur.</li>
+    <li>L'accès SSH est ouvert à la volée : le pare-feu d'o2switch filtre par IP source, l'API
+        cPanel <code class="inl">SshWhitelist</code> autorise l'IP du runner pour la durée du job
+        puis la referme systématiquement (<code class="inl">if: always()</code>).</li>
+    <li>Répartition des rôles au transfert : le code source arrive par <code class="inl">git reset
+        --hard</code>, seuls les artefacts ignorés par git (<code class="inl">vendor/</code>,
+        assets compilés) arrivent par <code class="inl">rsync</code> — sans
+        <code class="inl">--delete</code> à la racine, pour que <code class="inl">.env.local</code>
+        (non versionné) ne puisse jamais être détruit par une erreur de configuration du
+        transfert.</li>
+</ol>
+
+<div class="note warn">
+    <strong>Mode de défaillance connu.</strong> <code class="inl">git reset --hard</code>
+    s'exécute <em>avant</em> <code class="inl">composer install</code>/les migrations. Si une
+    étape ultérieure du déploiement échoue, <code class="inl">HEAD</code> a déjà bougé : le site
+    sert du code neuf avec un <code class="inl">vendor/</code> ou un schéma périmé. Comme le
+    déclenchement suit <code class="inl">push sur main</code> et non un cron, il n'y a pas de
+    nouvelle tentative automatique — reprise manuelle en SSH nécessaire.
+</div>
+
+<div class="note">
+    <strong>Contrainte d'infrastructure récurrente.</strong> La liste blanche SSH de cPanel est
+    plafonnée à 5 entrées et se remplit d'IP de runners disparus au fil du temps ; le workflow la
+    vide intégralement à chaque exécution avant d'y ajouter l'IP courante — ce qui efface aussi
+    l'IP personnelle de Guillaume, à ré-autoriser manuellement depuis cPanel après chaque
+    déploiement pour retrouver un accès SSH direct.
+</div>
+
+<p>Voir le diagramme de pipeline en §9 pour le détail des 8 étapes.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- 9. SCHEMAS -->
+<!-- ============================================================ -->
+<div class="sec pagebreak" id="s9">
+<div class="section-header">
+    <div class="icon"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 2h7v5h-7z"/></svg></div>
+    <h2>9. Schémas &amp; diagrammes</h2>
+</div>
+
+<div class="keep">
+<div class="subsection">
+    <svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 2h7v5h-7z"/></svg>
+    <h3>9.1 Modèle conceptuel</h3>
+</div>
+<div class="diagram">
+<svg viewBox="0 0 860 320" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+    <rect x="40" y="140" width="170" height="60" rx="8" fill="#eaf4fb" stroke="#0b3c6e" stroke-width="1.5"/>
+    <text x="125" y="165" text-anchor="middle" font-size="13" font-weight="700" fill="#0b3c6e">Utilisateur</text>
+    <text x="125" y="182" text-anchor="middle" font-size="10.5" fill="#6b7785">App\Entity\User</text>
+
+    <g font-size="11" fill="#222">
+        <rect x="560" y="10" width="260" height="40" rx="6" fill="#fff" stroke="#d7dee6"/>
+        <text x="690" y="34" text-anchor="middle">Settings</text>
+
+        <rect x="560" y="60" width="260" height="40" rx="6" fill="#fff" stroke="#d7dee6"/>
+        <text x="690" y="84" text-anchor="middle">PunchEvent (pointage)</text>
+
+        <rect x="560" y="110" width="260" height="40" rx="6" fill="#fff" stroke="#d7dee6"/>
+        <text x="690" y="134" text-anchor="middle">DayEvent (événement du jour)</text>
+
+        <rect x="560" y="160" width="260" height="40" rx="6" fill="#fff" stroke="#d7dee6"/>
+        <text x="690" y="184" text-anchor="middle">EmployerReading (relevé ADP)</text>
+
+        <rect x="560" y="210" width="260" height="40" rx="6" fill="#fff" stroke="#d7dee6"/>
+        <text x="690" y="234" text-anchor="middle">RawImport (texte collé)</text>
+
+        <rect x="560" y="260" width="260" height="40" rx="6" fill="#fff" stroke="#d7dee6"/>
+        <text x="690" y="284" text-anchor="middle">BalanceMovement (compteur)</text>
+    </g>
+
+    <g stroke="#1c7fc4" stroke-width="1.2" fill="none">
+        <line x1="210" y1="170" x2="560" y2="30"/>
+        <line x1="210" y1="170" x2="560" y2="80"/>
+        <line x1="210" y1="170" x2="560" y2="130"/>
+        <line x1="210" y1="170" x2="560" y2="180"/>
+        <line x1="210" y1="170" x2="560" y2="230"/>
+        <line x1="210" y1="170" x2="560" y2="280"/>
+    </g>
+    <g font-size="10" fill="#0b3c6e" font-weight="600">
+        <text x="218" y="150">1</text>
+        <text x="540" y="24">1</text>
+        <text x="218" y="180">1</text>
+        <text x="540" y="74">N</text>
+        <text x="230" y="200">1</text>
+        <text x="540" y="124">N</text>
+        <text x="245" y="215">1</text>
+        <text x="540" y="174">N</text>
+        <text x="255" y="230">1</text>
+        <text x="540" y="224">N</text>
+        <text x="265" y="245">1</text>
+        <text x="540" y="274">N</text>
+    </g>
+</svg>
+<div class="cap">Un utilisateur possède un unique paramétrage (1-1) et une collection indépendante de chacune des cinq autres entités (1-N).</div>
+</div>
+</div>
+
+<div class="keep">
+<div class="subsection">
+    <svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 2h7v5h-7z"/></svg>
+    <h3>9.2 Modèle logique</h3>
+</div>
+<div class="diagram">
+<svg viewBox="0 0 860 420" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+    <rect x="350" y="20" width="160" height="72" rx="8" fill="#eaf4fb" stroke="#0b3c6e" stroke-width="1.5"/>
+    <text x="430" y="38" text-anchor="middle" font-size="12" font-weight="700" fill="#0b3c6e">app_user</text>
+    <text x="430" y="54" text-anchor="middle" font-size="10" fill="#222">id (PK), email</text>
+    <text x="430" y="68" text-anchor="middle" font-size="10" fill="#222">password, roles</text>
+    <text x="430" y="82" text-anchor="middle" font-size="9.5" fill="#6b7785">unique(email)</text>
+
+    <rect x="40" y="150" width="290" height="182" rx="8" fill="#fff" stroke="#d7dee6"/>
+    <text x="55" y="172" font-size="12" font-weight="700" fill="#10456e">punch_event</text>
+    <g font-size="10.5" fill="#222">
+        <text x="55" y="192">id <tspan fill="#1c7fc4" font-weight="700">PK</tspan></text>
+        <text x="55" y="210">user_id <tspan fill="#d97706" font-weight="700">FK → app_user</tspan></text>
+        <text x="55" y="228">date</text>
+        <text x="55" y="246">time <tspan fill="#6b7785">(min depuis minuit)</tspan></text>
+        <text x="55" y="264">rang <tspan fill="#6b7785">(1, 2, 3…)</tspan></text>
+        <text x="55" y="282">nature <tspan fill="#6b7785">(reel/previsionnel)</tspan></text>
+        <text x="55" y="300">origin <tspan fill="#6b7785">(adp/saisie_manuelle)</tspan></text>
+    </g>
+    <text x="55" y="320" font-size="9.5" fill="#0b3c6e" font-weight="600">unique(user_id, date, time, rang)</text>
+
+    <rect x="500" y="150" width="320" height="150" rx="8" fill="#fff" stroke="#d7dee6"/>
+    <text x="515" y="172" font-size="12" font-weight="700" fill="#10456e">day_event</text>
+    <g font-size="10.5" fill="#222">
+        <text x="515" y="192">id <tspan fill="#1c7fc4" font-weight="700">PK</tspan></text>
+        <text x="515" y="210">user_id <tspan fill="#d97706" font-weight="700">FK → app_user</tspan></text>
+        <text x="515" y="228">date</text>
+        <text x="515" y="246">code <tspan fill="#6b7785">(CP/CA/RTT/JF/TT)</tspan></text>
+        <text x="515" y="264">quotite <tspan fill="#6b7785">(full/half — pas "portion", mot réservé)</tspan></text>
+        <text x="515" y="282">half <tspan fill="#6b7785">(matin/apres_midi, nullable)</tspan></text>
+    </g>
+    <text x="515" y="300" font-size="9.5" fill="#0b3c6e" font-weight="600">unique(user_id, date)</text>
+
+    <line x1="185" y1="150" x2="410" y2="92" stroke="#1c7fc4" stroke-width="1.2"/>
+    <line x1="660" y1="150" x2="450" y2="92" stroke="#1c7fc4" stroke-width="1.2"/>
+    <text x="190" y="140" font-size="10" fill="#0b3c6e" font-weight="600">N</text>
+    <text x="655" y="140" font-size="10" fill="#0b3c6e" font-weight="600">N</text>
+
+    <rect x="40" y="355" width="780" height="50" rx="8" fill="#fcfdff" stroke="#d7dee6" stroke-dasharray="4 3"/>
+    <text x="430" y="378" text-anchor="middle" font-size="11" fill="#37475a">
+        + 4 tables satellites, même relation N-1 vers app_user :
+    </text>
+    <text x="430" y="395" text-anchor="middle" font-size="10.5" fill="#6b7785">
+        settings (1-1), employer_reading, raw_import, balance_movement — détail complet en §3
+    </text>
+
+    <defs>
+        <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#1c7fc4"/>
+        </marker>
+    </defs>
+</svg>
+<div class="cap">Les deux tables les plus caractéristiques du domaine, détaillées ; les cinq autres suivent le même schéma de rattachement à app_user (voir §3 pour le détail complet des 7 tables).</div>
+</div>
+</div>
+
+<div class="keep">
+<div class="subsection">
+    <svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zm10 0h8v5h-8zm0 7h8v11h-8zM3 13h8v8H3z"/></svg>
+    <h3>9.3 Architecture technique</h3>
+</div>
+<div class="diagram">
+<svg viewBox="0 0 860 300" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+    <g font-size="11" fill="#222">
+        <rect x="15" y="30" width="120" height="50" rx="6" fill="#fff" stroke="#d7dee6"/>
+        <text x="75" y="59" text-anchor="middle">Navigateur</text>
+
+        <rect x="165" y="30" width="150" height="50" rx="6" fill="#fff" stroke="#d7dee6"/>
+        <text x="240" y="53" text-anchor="middle">Apache</text>
+        <text x="240" y="68" text-anchor="middle" font-size="9.5" fill="#6b7785">.htaccess → public/</text>
+
+        <rect x="345" y="30" width="150" height="50" rx="6" fill="#fff" stroke="#d7dee6"/>
+        <text x="420" y="53" text-anchor="middle">index.php</text>
+        <text x="420" y="68" text-anchor="middle" font-size="9.5" fill="#6b7785">Kernel Symfony</text>
+
+        <rect x="525" y="30" width="160" height="50" rx="6" fill="#eaf4fb" stroke="#0b3c6e" stroke-width="1.5"/>
+        <text x="605" y="59" text-anchor="middle" font-weight="700" fill="#0b3c6e">Contrôleur</text>
+
+        <rect x="715" y="30" width="130" height="50" rx="6" fill="#fff" stroke="#d7dee6"/>
+        <text x="780" y="59" text-anchor="middle">Twig → HTML</text>
+    </g>
+
+    <g stroke="#1c7fc4" stroke-width="1.3" fill="none" marker-end="url(#arr2)">
+        <line x1="135" y1="55" x2="163" y2="55"/>
+        <line x1="315" y1="55" x2="343" y2="55"/>
+        <line x1="495" y1="55" x2="523" y2="55"/>
+        <line x1="685" y1="55" x2="713" y2="55"/>
+    </g>
+    <path d="M780 80 C780 130 75 130 75 82" stroke="#1c7fc4" stroke-width="1.2" fill="none" marker-end="url(#arr2)" stroke-dasharray="3 3"/>
+    <text x="420" y="122" text-anchor="middle" font-size="10" fill="#6b7785">réponse rendue</text>
+
+    <g font-size="11" fill="#222">
+        <rect x="430" y="170" width="200" height="60" rx="6" fill="#eef9f1" stroke="#1f9d55" stroke-width="1.5"/>
+        <text x="530" y="192" text-anchor="middle" font-weight="700" fill="#166534">Domaine (src/Domain)</text>
+        <text x="530" y="208" text-anchor="middle" font-size="9.5" fill="#37613f">calcul pur, testable sans DB</text>
+        <text x="530" y="222" text-anchor="middle" font-size="9.5" fill="#37613f">ni Doctrine, ni HTTP</text>
+
+        <rect x="660" y="170" width="170" height="50" rx="6" fill="#fff" stroke="#d7dee6"/>
+        <text x="745" y="199" text-anchor="middle">Doctrine ORM</text>
+
+        <rect x="660" y="250" width="170" height="45" rx="6" fill="#fff" stroke="#d7dee6"/>
+        <text x="745" y="277" text-anchor="middle">MariaDB 11.4</text>
+    </g>
+    <g stroke="#1c7fc4" stroke-width="1.2" fill="none" marker-end="url(#arr2)">
+        <line x1="605" y1="80" x2="560" y2="168"/>
+        <line x1="650" y1="80" x2="720" y2="168"/>
+        <line x1="745" y1="220" x2="745" y2="248"/>
+    </g>
+
+    <defs>
+        <marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#1c7fc4"/>
+        </marker>
+    </defs>
+</svg>
+<div class="cap">Le contrôleur orchestre : il appelle le domaine pur pour le calcul et Doctrine pour la persistance, sans que le domaine ne connaisse ni l'un ni l'autre.</div>
+</div>
+</div>
+
+<div class="pagebreak"></div>
+<div class="keep">
+<div class="subsection">
+    <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zm2 4h12M6 12h12M6 16h8"/></svg>
+    <h3>9.4 Séquence — import d'un pointage ADP</h3>
+</div>
+<div class="diagram">
+<svg viewBox="0 0 860 400" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+    <g font-size="11" font-weight="700" fill="#0b3c6e">
+        <rect x="20" y="10" width="120" height="34" rx="5" fill="#eaf4fb" stroke="#0b3c6e"/>
+        <text x="80" y="31" text-anchor="middle">Utilisateur</text>
+
+        <rect x="210" y="10" width="150" height="34" rx="5" fill="#eaf4fb" stroke="#0b3c6e"/>
+        <text x="285" y="31" text-anchor="middle" font-size="10.5">ImportController</text>
+
+        <rect x="440" y="10" width="130" height="34" rx="5" fill="#eaf4fb" stroke="#0b3c6e"/>
+        <text x="505" y="31" text-anchor="middle" font-size="10.5">AdpParser</text>
+
+        <rect x="640" y="4" width="150" height="46" rx="5" fill="#eaf4fb" stroke="#0b3c6e"/>
+        <text x="715" y="22" text-anchor="middle" font-size="10">AdpImporter /</text>
+        <text x="715" y="36" text-anchor="middle" font-size="10">ImportPlanner</text>
+    </g>
+
+    <g stroke="#c7d2db" stroke-dasharray="3 3">
+        <line x1="80" y1="50" x2="80" y2="385"/>
+        <line x1="285" y1="50" x2="285" y2="385"/>
+        <line x1="505" y1="50" x2="505" y2="385"/>
+        <line x1="715" y1="50" x2="715" y2="385"/>
+    </g>
+
+    <defs>
+        <marker id="arr3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#1c7fc4"/>
+        </marker>
+    </defs>
+
+    <g font-size="10" fill="#222">
+        <line x1="80" y1="76" x2="285" y2="76" stroke="#1c7fc4" marker-end="url(#arr3)"/>
+        <text x="90" y="72">POST /import (payload, année, action=importer)</text>
+
+        <line x1="285" y1="106" x2="505" y2="106" stroke="#1c7fc4" marker-end="url(#arr3)"/>
+        <text x="295" y="102">parse(payload, year)</text>
+
+        <line x1="505" y1="136" x2="285" y2="136" stroke="#6b7785" stroke-dasharray="4 3" marker-end="url(#arr3)"/>
+        <text x="295" y="132">ParsedWeek (jours, pointages, totaux ADP)</text>
+
+        <line x1="285" y1="171" x2="715" y2="171" stroke="#1c7fc4" marker-end="url(#arr3)"/>
+        <text x="330" y="167">import(user, payload, year)</text>
+
+        <text x="565" y="197" fill="#37475a">plan(user, week, observedAt, pointages existants)</text>
+        <text x="565" y="214" fill="#6b7785">→ ImportPlan : à créer / à périmer / relevés à ajouter</text>
+
+        <rect x="655" y="228" width="120" height="30" rx="4" fill="#eef9f1" stroke="#1f9d55"/>
+        <text x="715" y="247" text-anchor="middle" font-size="9.5" fill="#166534">persist + flush (base)</text>
+
+        <line x1="285" y1="300" x2="715" y2="300" stroke="#1c7fc4"/>
+        <text x="295" y="296">↳ 1 seule transaction (§7 : pointages dédupliqués, relevé toujours ajouté)</text>
+
+        <line x1="715" y1="335" x2="285" y2="335" stroke="#6b7785" stroke-dasharray="4 3" marker-end="url(#arr3)"/>
+        <text x="330" y="331">ImportPlan (compteurs : créés / périmés / relevés)</text>
+
+        <line x1="285" y1="370" x2="80" y2="370" stroke="#6b7785" stroke-dasharray="4 3" marker-end="url(#arr3)"/>
+        <text x="90" y="366">200 — aperçu + compteurs d'import</text>
+    </g>
+</svg>
+<div class="cap">Le parseur et le planificateur sont purs (aucune écriture) ; seul AdpImporter touche la base, en une transaction unique.</div>
+</div>
+</div>
+
+<div class="keep">
+<div class="subsection">
+    <svg viewBox="0 0 24 24"><path d="M12 2 2 7v10l10 5 10-5V7z"/></svg>
+    <h3>9.5 Pipeline de déploiement</h3>
+</div>
+<div class="diagram">
+<svg viewBox="0 0 860 300" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+    <g font-size="10" fill="#222">
+        <rect x="20" y="30" width="180" height="60" rx="6" fill="#eaf4fb" stroke="#0b3c6e" stroke-width="1.5"/>
+        <text x="110" y="55" text-anchor="middle" font-weight="700" fill="#0b3c6e">1. Push sur main</text>
+        <text x="110" y="72" text-anchor="middle" font-size="9" fill="#37475a">déclenche le workflow</text>
+
+        <rect x="220" y="30" width="180" height="60" rx="6" fill="#fff" stroke="#d7dee6"/>
+        <text x="310" y="52" text-anchor="middle" font-weight="700">2. Build</text>
+        <text x="310" y="68" text-anchor="middle" font-size="9" fill="#6b7785">composer install --no-dev</text>
+        <text x="310" y="80" text-anchor="middle" font-size="9" fill="#6b7785">asset-map:compile — sur le runner</text>
+
+        <rect x="420" y="30" width="180" height="60" rx="6" fill="#fdf6ec" stroke="#d97706" stroke-width="1.5"/>
+        <text x="510" y="52" text-anchor="middle" font-weight="700" fill="#92400e">3. Liste blanche SSH</text>
+        <text x="510" y="68" text-anchor="middle" font-size="9" fill="#78350f">vidée puis IP du runner</text>
+        <text x="510" y="80" text-anchor="middle" font-size="9" fill="#78350f">ajoutée (API cPanel)</text>
+
+        <rect x="620" y="30" width="180" height="60" rx="6" fill="#fff" stroke="#d7dee6"/>
+        <text x="710" y="52" text-anchor="middle" font-weight="700">4. Code à jour</text>
+        <text x="710" y="68" text-anchor="middle" font-size="9" fill="#6b7785">git reset --hard origin/main</text>
+        <text x="710" y="80" text-anchor="middle" font-size="9" fill="#6b7785">(SSH, sur le serveur)</text>
+    </g>
+
+    <g stroke="#1c7fc4" stroke-width="1.3" fill="none" marker-end="url(#arr4)">
+        <line x1="200" y1="60" x2="218" y2="60"/>
+        <line x1="400" y1="60" x2="418" y2="60"/>
+        <line x1="600" y1="60" x2="618" y2="60"/>
+        <path d="M710 90 C710 130 710 130 710 168"/>
+    </g>
+
+    <g font-size="10" fill="#222">
+        <rect x="620" y="170" width="180" height="60" rx="6" fill="#fff" stroke="#d7dee6"/>
+        <text x="710" y="192" text-anchor="middle" font-weight="700">5. Transfert rsync</text>
+        <text x="710" y="208" text-anchor="middle" font-size="9" fill="#6b7785">vendor/ + assets compilés</text>
+        <text x="710" y="220" text-anchor="middle" font-size="9" fill="#6b7785">jamais --delete à la racine</text>
+
+        <rect x="420" y="170" width="180" height="60" rx="6" fill="#fff" stroke="#d7dee6"/>
+        <text x="510" y="192" text-anchor="middle" font-weight="700">6. Migrations</text>
+        <text x="510" y="208" text-anchor="middle" font-size="9" fill="#6b7785">doctrine:migrations:migrate</text>
+        <text x="510" y="220" text-anchor="middle" font-size="9" fill="#6b7785">+ cache:clear --env=prod</text>
+
+        <rect x="220" y="170" width="180" height="60" rx="6" fill="#eef9f1" stroke="#1f9d55" stroke-width="1.5"/>
+        <text x="310" y="192" text-anchor="middle" font-weight="700" fill="#166534">7. Vérification</text>
+        <text x="310" y="208" text-anchor="middle" font-size="9" fill="#37613f">/import et /semaine</text>
+        <text x="310" y="220" text-anchor="middle" font-size="9" fill="#37613f">doivent répondre 200</text>
+
+        <rect x="20" y="170" width="180" height="60" rx="6" fill="#fff" stroke="#d7dee6"/>
+        <text x="110" y="192" text-anchor="middle" font-weight="700">8. Referme SSH</text>
+        <text x="110" y="208" text-anchor="middle" font-size="9" fill="#6b7785">toujours exécuté</text>
+        <text x="110" y="220" text-anchor="middle" font-size="9" fill="#6b7785">(if: always())</text>
+    </g>
+    <g stroke="#1c7fc4" stroke-width="1.3" fill="none" marker-end="url(#arr4)">
+        <line x1="620" y1="200" x2="602" y2="200"/>
+        <line x1="420" y1="200" x2="402" y2="200"/>
+        <line x1="220" y1="200" x2="202" y2="200"/>
+    </g>
+
+    <defs>
+        <marker id="arr4" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#1c7fc4"/>
+        </marker>
+    </defs>
+</svg>
+<div class="cap">8 étapes, du push jusqu'à la vérification HTTP réelle ; la fermeture de l'accès SSH est garantie même en cas d'échec d'une étape précédente.</div>
+</div>
+</div>
+
+<div class="keep">
+<div class="subsection">
+    <svg viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+    <h3>9.6 Plan de navigation</h3>
+</div>
+<div class="diagram">
+<svg viewBox="0 0 860 380" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+    <rect x="350" y="10" width="160" height="40" rx="6" fill="#fff" stroke="#d7dee6"/>
+    <text x="430" y="35" text-anchor="middle" font-size="11">Requête HTTP</text>
+
+    <rect x="290" y="80" width="280" height="50" rx="6" fill="#eaf4fb" stroke="#0b3c6e" stroke-width="1.5"/>
+    <text x="430" y="100" text-anchor="middle" font-size="11" font-weight="700" fill="#0b3c6e">access_control</text>
+    <text x="430" y="116" text-anchor="middle" font-size="9.5" fill="#37475a">(config/packages/security.yaml)</text>
+
+    <rect x="30" y="180" width="260" height="50" rx="6" fill="#eef9f1" stroke="#1f9d55" stroke-width="1.5"/>
+    <text x="160" y="200" text-anchor="middle" font-size="10.5" font-weight="700" fill="#166534">^/login → PUBLIC_ACCESS</text>
+    <text x="160" y="216" text-anchor="middle" font-size="9.5" fill="#37613f">écran de connexion, form_login</text>
+
+    <rect x="530" y="180" width="300" height="50" rx="6" fill="#fdf6ec" stroke="#d97706" stroke-width="1.5"/>
+    <text x="680" y="200" text-anchor="middle" font-size="10.5" font-weight="700" fill="#92400e">^/ → ROLE_USER</text>
+    <text x="680" y="216" text-anchor="middle" font-size="9.5" fill="#78350f">sinon redirection vers /login</text>
+
+    <g stroke="#1c7fc4" stroke-width="1.3" fill="none" marker-end="url(#arr5)">
+        <line x1="430" y1="50" x2="430" y2="78"/>
+        <line x1="380" y1="130" x2="200" y2="178"/>
+        <line x1="480" y1="130" x2="640" y2="178"/>
+        <line x1="680" y1="230" x2="680" y2="258"/>
+    </g>
+
+    <g font-size="9.5" fill="#222">
+        <rect x="15" y="260" width="130" height="60" rx="5" fill="#fff" stroke="#d7dee6"/>
+        <text x="80" y="278" text-anchor="middle" font-weight="700">Import ADP</text>
+        <text x="80" y="292" text-anchor="middle" fill="#6b7785">/, /import</text>
+
+        <rect x="155" y="260" width="130" height="60" rx="5" fill="#fff" stroke="#d7dee6"/>
+        <text x="220" y="278" text-anchor="middle" font-weight="700">Semaine</text>
+        <text x="220" y="292" text-anchor="middle" fill="#6b7785">/semaine*, /jour/*,</text>
+        <text x="220" y="304" text-anchor="middle" fill="#6b7785">/semaine/evenement*</text>
+
+        <rect x="295" y="260" width="130" height="60" rx="5" fill="#fff" stroke="#d7dee6"/>
+        <text x="360" y="278" text-anchor="middle" font-weight="700">Compteurs</text>
+        <text x="360" y="292" text-anchor="middle" fill="#6b7785">/compteurs,</text>
+        <text x="360" y="304" text-anchor="middle" fill="#6b7785">/semaine/*/rtt, /*/heures-sup</text>
+
+        <rect x="435" y="260" width="130" height="60" rx="5" fill="#fff" stroke="#d7dee6"/>
+        <text x="500" y="278" text-anchor="middle" font-weight="700">Projection</text>
+        <text x="500" y="292" text-anchor="middle" fill="#6b7785">/quand-partir</text>
+
+        <rect x="575" y="260" width="130" height="60" rx="5" fill="#fff" stroke="#d7dee6"/>
+        <text x="640" y="278" text-anchor="middle" font-weight="700">Paramétrage</text>
+        <text x="640" y="292" text-anchor="middle" fill="#6b7785">/parametres</text>
+
+        <rect x="715" y="260" width="130" height="60" rx="5" fill="#fff" stroke="#d7dee6"/>
+        <text x="780" y="278" text-anchor="middle" font-weight="700">Session</text>
+        <text x="780" y="292" text-anchor="middle" fill="#6b7785">/logout</text>
+    </g>
+
+    <defs>
+        <marker id="arr5" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#1c7fc4"/>
+        </marker>
+    </defs>
+</svg>
+<div class="cap">Une seule route publique (/login) ; toutes les autres exigent une session ROLE_USER active, groupées ici par écran fonctionnel.</div>
+</div>
+</div>
+
+</div>
+
+</div>
+</body>
+</html>
