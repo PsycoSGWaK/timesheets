@@ -64,6 +64,17 @@ final class WeekControllerTest extends WebTestCase
     }
 
     #[Test]
+    public function it_shows_both_the_35h_and_37h_weekly_targets(): void
+    {
+        $this->client->request('GET', '/semaine/2026/30');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorCount(2, '.projection-target');
+        self::assertSelectorTextContains('.projection-target--reference .projection-target__label', '35h');
+        self::assertSelectorTextContains('.projection-target--bascule .projection-target__label', '37h');
+    }
+
+    #[Test]
     public function it_jumps_directly_to_the_week_picked_in_the_native_picker(): void
     {
         // <input type="week"> soumet un format YYYY-Www.
