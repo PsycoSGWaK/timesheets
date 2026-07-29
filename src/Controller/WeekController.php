@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Domain\Balance\BalanceCounter;
 use App\Domain\Projection\WeekProjectionCalculator;
 use App\Domain\Week\IsoWeek;
 use App\Entity\Settings;
 use App\Entity\User;
+use App\Repository\BalanceMovementRepository;
 use App\Repository\SettingsRepository;
+use App\Week\DayEditPanel;
+use App\Week\DayEditPanelLoader;
 use App\Week\WeekLoader;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Clock\ClockInterface;
@@ -26,23 +30,25 @@ final class WeekController extends AbstractController
     public function __construct(
         private readonly SettingsRepository $settingsRepository,
         private readonly WeekLoader $weekLoader,
+        private readonly DayEditPanelLoader $dayEditPanelLoader,
+        private readonly BalanceMovementRepository $balances,
         private readonly WeekProjectionCalculator $projectionCalculator,
         private readonly ClockInterface $clock,
     ) {
     }
 
     #[Route('/semaine', name: 'week_current', methods: ['GET'])]
-    public function currentWeek(#[CurrentUser] User $user): Response
+    public function currentWeek(#[CurrentUser] User $user, Request $request): Response
     {
         $today = $this->today();
 
-        return $this->renderWeek($user, (int) $today->format('o'), (int) $today->format('W'));
+        return $this->renderWeek($user, (int) $today->format('o'), (int) $today->format('W'), $request);
     }
 
     #[Route('/semaine/{year}/{week}', name: 'week', requirements: ['year' => '\d{4}', 'week' => '\d{1,2}'], methods: ['GET'])]
-    public function week(int $year, int $week, #[CurrentUser] User $user): Response
+    public function week(int $year, int $week, #[CurrentUser] User $user, Request $request): Response
     {
-        return $this->renderWeek($user, $year, $week);
+        return $this->renderWeek($user, $year, $week, $request);
     }
 
     /**
@@ -62,7 +68,7 @@ final class WeekController extends AbstractController
         return $this->redirectToRoute('week_current');
     }
 
-    private function renderWeek(User $user, int $year, int $week): Response
+    private function renderWeek(User $user, int $year, int $week, Request $request): Response
     {
         $dates = IsoWeek::dates($year, $week);
         $monday = $dates[0];
@@ -71,6 +77,7 @@ final class WeekController extends AbstractController
         $settings = $this->settingsRepository->forUser($user);
 
         $workWeek = $this->weekLoader->load($user, $dates, $today, $settings);
+        $dayPanel = $this->loadDayPanel($request, $user, $settings);
 
         $remainingWorkingDays = $this->countRemainingWorkingDays($dates, $today, $settings);
         $workedMinutes = $workWeek->weekFact()->workedMinutes();
@@ -92,6 +99,8 @@ final class WeekController extends AbstractController
 
         return $this->render('week/index.html.twig', [
             'workWeek' => $workWeek,
+            'dayPanel' => $dayPanel,
+            'balances' => $this->balancesOverview($user),
             'projectionReference' => $projectionReference,
             'projection' => $projection,
             'week' => $week,
@@ -101,6 +110,39 @@ final class WeekController extends AbstractController
             'next' => ['year' => (int) $next->format('o'), 'week' => (int) $next->format('W')],
             'pickerValue' => sprintf('%04d-W%02d', $year, $week),
         ]);
+    }
+
+    /**
+     * Le solde de chaque compteur (spec §2), affiché à droite de « Ma semaine »
+     * plutôt que sur un écran séparé (règle du 29/07/2026) — même donnée que
+     * {@see BalanceController::index()}.
+     *
+     * @return list<array{counter: BalanceCounter, amount: \App\Domain\Time\Minutes}>
+     */
+    private function balancesOverview(User $user): array
+    {
+        $balances = [];
+        foreach (BalanceCounter::cases() as $counter) {
+            $balances[] = ['counter' => $counter, 'amount' => $this->balances->balanceFor($user, $counter)];
+        }
+
+        return $balances;
+    }
+
+    /**
+     * Panneau d'édition d'une journée, intégré à l'écran de la semaine plutôt que sur
+     * une page séparée (règle du 29/07/2026) : absent tant qu'aucun jour n'est
+     * sélectionné via le paramètre `jour`, une valeur illisible étant traitée comme
+     * une absence de sélection plutôt qu'une erreur.
+     */
+    private function loadDayPanel(Request $request, User $user, Settings $settings): ?DayEditPanel
+    {
+        $jour = (string) $request->query->get('jour', '');
+        if (1 !== preg_match('/^\d{4}-\d{2}-\d{2}$/', $jour)) {
+            return null;
+        }
+
+        return $this->dayEditPanelLoader->load($user, new \DateTimeImmutable($jour), $settings);
     }
 
     /**

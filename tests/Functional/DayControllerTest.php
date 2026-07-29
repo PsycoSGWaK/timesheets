@@ -12,9 +12,10 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
- * L'écran d'un jour : saisir/modifier les pointages prévisionnels, avec la
- * projection « quand partir » qui apparaît dès que matin/midi/après-midi sont
- * connus (spec §4.6, l'usage principal de l'application).
+ * Enregistrement des pointages prévisionnels/correctifs d'un jour : l'édition
+ * elle-même vit dans le panneau intégré à « Ma semaine » ({@see WeekControllerTest}),
+ * cette route ne fait plus que sauvegarder puis rediriger vers la semaine du jour
+ * concerné (règle du 29/07/2026 — avant, on retombait sur la semaine courante).
  */
 final class DayControllerTest extends WebTestCase
 {
@@ -39,20 +40,16 @@ final class DayControllerTest extends WebTestCase
     }
 
     #[Test]
-    public function a_fresh_day_shows_four_empty_editable_fields_and_no_projection(): void
+    public function visiting_the_legacy_day_url_redirects_to_its_week_with_the_day_selected(): void
     {
+        // 24/07/2026 tombe semaine ISO 30 de 2026.
         $this->client->request('GET', '/jour/2026-07-24');
 
-        self::assertResponseIsSuccessful();
-        self::assertSelectorExists('input[name="matin"]:not([readonly])');
-        self::assertSelectorExists('input[name="midi"]:not([readonly])');
-        self::assertSelectorExists('input[name="apres_midi"]:not([readonly])');
-        self::assertSelectorExists('input[name="soir"]:not([readonly])');
-        self::assertSelectorNotExists('.leave');
+        self::assertResponseRedirects('/semaine/2026/30?jour=2026-07-24');
     }
 
     #[Test]
-    public function saving_three_punches_creates_provisional_events_and_shows_the_projection(): void
+    public function saving_redirects_to_the_week_being_edited_not_the_current_week(): void
     {
         $this->client->request('POST', '/jour/2026-07-24', [
             'matin' => '08:48',
@@ -61,16 +58,26 @@ final class DayControllerTest extends WebTestCase
             'soir' => '',
         ]);
 
-        self::assertResponseRedirects('/jour/2026-07-24');
-        $this->client->followRedirect();
-
-        self::assertSelectorTextContains('.leave', '16:42');
+        // Régression du 29/07/2026 : ramenait auparavant sur la semaine courante.
+        self::assertResponseRedirects('/semaine/2026/30?jour=2026-07-24');
 
         $punches = $this->entityManager->getRepository(PunchEvent::class)->findBy([]);
         self::assertCount(3, $punches);
         foreach ($punches as $punch) {
             self::assertFalse($punch->isProbative());
         }
+    }
+
+    #[Test]
+    public function after_saving_the_week_screen_shows_the_panel_prefilled_with_the_projection(): void
+    {
+        $this->client->request('POST', '/jour/2026-07-24', [
+            'matin' => '08:48', 'midi' => '11:47', 'apres_midi' => '12:13', 'soir' => '',
+        ]);
+        $this->client->followRedirect();
+
+        self::assertSelectorTextContains('.day-panel .leave', '16:42');
+        self::assertSelectorExists('.day-panel input[name="matin"]:not([readonly])');
     }
 
     #[Test]
@@ -86,8 +93,8 @@ final class DayControllerTest extends WebTestCase
         $punches = $this->entityManager->getRepository(PunchEvent::class)->findBy([]);
         self::assertCount(3, $punches);
 
-        $this->client->request('GET', '/jour/2026-07-24');
-        self::assertSelectorTextContains('.leave', '16:42');
+        $this->client->request('GET', '/semaine/2026/30', ['jour' => '2026-07-24']);
+        self::assertSelectorTextContains('.day-panel .leave', '16:42');
     }
 
     #[Test]
@@ -101,11 +108,11 @@ final class DayControllerTest extends WebTestCase
         ]);
         self::assertResponseIsSuccessful();
 
-        $this->client->request('GET', '/jour/2026-07-24');
+        $this->client->request('GET', '/semaine/2026/30', ['jour' => '2026-07-24']);
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('input[name="matin"][readonly]');
-        self::assertSelectorTextContains('.leave', '16:42');
+        self::assertSelectorExists('.day-panel input[name="matin"][readonly]');
+        self::assertSelectorTextContains('.day-panel .leave', '16:42');
 
         // Tenter de resaisir le matin (déjà réel) ne doit rien casser ni le dupliquer.
         $this->client->request('POST', '/jour/2026-07-24', [
