@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Command;
 
 use App\Entity\User;
+use App\Tests\ResetsSchema;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -15,6 +15,8 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class CreateUserCommandTest extends KernelTestCase
 {
+    use ResetsSchema;
+
     private EntityManagerInterface $entityManager;
     private CommandTester $commandTester;
 
@@ -28,7 +30,7 @@ final class CreateUserCommandTest extends KernelTestCase
             throw new \RuntimeException('EntityManager indisponible.');
         }
         $this->entityManager = $entityManager;
-        $this->resetSchema();
+        $this->resetSchema($this->entityManager);
 
         $application = new Application(self::$kernel);
         $command = $application->find('app:user:create');
@@ -87,16 +89,5 @@ final class CreateUserCommandTest extends KernelTestCase
 
         $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
         self::assertTrue($hasher->isPasswordValid($user, 'un-mot-de-passe-saisi'));
-    }
-
-    private function resetSchema(): void
-    {
-        $connection = $this->entityManager->getConnection();
-        foreach (['punch_event', 'employer_reading', 'raw_import', 'day_event', 'balance_movement', 'settings', 'app_user'] as $table) {
-            $connection->executeStatement('DROP TABLE IF EXISTS '.$table);
-        }
-
-        $tool = new SchemaTool($this->entityManager);
-        $tool->createSchema($this->entityManager->getMetadataFactory()->getAllMetadata());
     }
 }
