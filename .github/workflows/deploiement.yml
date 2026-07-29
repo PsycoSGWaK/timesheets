@@ -170,14 +170,21 @@ jobs:
             $PHP_DISTANT bin/console cache:clear --env=prod --no-debug"
 
       - name: Verifie que le site repond
-        # On interroge /import et /semaine, et non / : la racine redirige (302)
-        # vers l'ecran de collage.
+        # /login est la seule route publique (access_control, depuis
+        # l'authentification du 27/07/2026) : on l'attend a 200. /import et
+        # /semaine exigent une session ROLE_USER, donc redirigent (302) vers
+        # /login pour une requete anonyme — un 200 sur ces deux-la voudrait dire
+        # que le cloisonnement des donnees vient de sauter.
         run: |
+          CODE="$(curl -s -o /dev/null -w '%{http_code}' --retry 3 --retry-delay 5 -m 30 "$BASE_URL/login")"
+          echo "$BASE_URL/login -> $CODE"
+          [ "$CODE" = "200" ] || { echo "::error::$BASE_URL/login renvoie $CODE au lieu de 200."; exit 1; }
+
           for CHEMIN in "/import" "/semaine"; do
             PAGE="$BASE_URL$CHEMIN"
             CODE="$(curl -s -o /dev/null -w '%{http_code}' --retry 3 --retry-delay 5 -m 30 "$PAGE")"
             echo "$PAGE -> $CODE"
-            [ "$CODE" = "200" ] || { echo "::error::$PAGE renvoie $CODE au lieu de 200."; exit 1; }
+            [ "$CODE" = "302" ] || { echo "::error::$PAGE renvoie $CODE au lieu de 302 (redirection attendue vers /login)."; exit 1; }
           done
 
       - name: Referme l'acces SSH
