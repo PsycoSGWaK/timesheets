@@ -48,6 +48,29 @@ final class BalanceControllerTest extends WebTestCase
     }
 
     #[Test]
+    public function it_shows_the_annual_quota_decompte_for_declared_events(): void
+    {
+        $this->client->request('POST', '/parametres', [
+            'pause_minimale' => '00:30', 'fenetre_debut' => '11:30', 'fenetre_fin' => '14:00',
+            'journee_reference_contractuelle' => '07:00', 'journee_reference_effective' => '07:24',
+            'rtt_max' => '02:00', 'fin_apres_midi_teletravail' => '16:00',
+            'jours_de_repos' => ['6', '7'],
+            'quota_cp' => '25',
+        ]);
+
+        $this->client->request('POST', '/semaine/evenement', [
+            'date' => '2026-07-27', 'code' => 'CP', 'portion' => 'full',
+        ]);
+
+        $this->client->request('GET', '/compteurs');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', '1 j');
+        self::assertSelectorTextContains('body', '25 j');
+        self::assertSelectorTextContains('body', '24 j');
+    }
+
+    #[Test]
     public function crediting_a_weeks_rtt_uses_the_recomputed_amount_not_a_client_supplied_one(): void
     {
         // Semaine pleine à 7h24/jour x 5 = 37h : 2h de RTT (plafond), spec §4.3.

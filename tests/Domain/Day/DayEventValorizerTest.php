@@ -168,6 +168,7 @@ final class DayEventValorizerTest extends TestCase
             rttMax: 2 * 60,
             finApresMidiTeletravail: 16 * 60,
             joursDeRepos: [6, 7],
+            quotasAnnuels: [],
         );
         $fact = $this->emptyFact();
         $event = DayEvent::declare($this->user(), $this->date(), DayEventCode::CongePaye, DayPortion::Full);

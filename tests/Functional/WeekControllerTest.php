@@ -123,7 +123,7 @@ final class WeekControllerTest extends WebTestCase
         self::assertSelectorTextContains('.balances-panel', 'Récupération');
         self::assertSelectorTextContains('.balances-panel', 'Variable');
         self::assertSelectorTextContains('.balances-panel', 'Paiement');
-        self::assertSelectorCount(4, '.balances-panel tbody tr');
+        self::assertSelectorCount(4, '.balances-table tbody tr');
     }
 
     #[Test]
@@ -141,6 +141,27 @@ final class WeekControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('.balances-panel', '2h00');
+    }
+
+    #[Test]
+    public function the_balances_panel_shows_the_annual_quota_decompte(): void
+    {
+        $this->client->request('POST', '/parametres', [
+            'pause_minimale' => '00:30', 'fenetre_debut' => '11:30', 'fenetre_fin' => '14:00',
+            'journee_reference_contractuelle' => '07:00', 'journee_reference_effective' => '07:24',
+            'rtt_max' => '02:00', 'fin_apres_midi_teletravail' => '16:00',
+            'jours_de_repos' => ['6', '7'],
+            'quota_jf' => '11',
+        ]);
+        $this->client->request('POST', '/semaine/evenement', [
+            'date' => '2026-07-27', 'code' => 'JF', 'portion' => 'full',
+        ]);
+
+        $this->client->request('GET', '/semaine/2026/31');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.balances-panel', 'Jour férié');
+        self::assertSelectorTextContains('.balances-panel', '10 j'); // 11 - 1 restant
     }
 
     #[Test]

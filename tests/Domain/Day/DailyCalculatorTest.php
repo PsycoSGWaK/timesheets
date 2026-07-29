@@ -174,6 +174,7 @@ final class DailyCalculatorTest extends TestCase
             rttMax: $this->settings->rttMax()->value(),
             finApresMidiTeletravail: $this->settings->finApresMidiTeletravail()->value(),
             joursDeRepos: $this->settings->joursDeRepos(),
+            quotasAnnuels: $this->settings->quotasAnnuels(),
         );
 
         $fact = (new DailyCalculator())->calculate(

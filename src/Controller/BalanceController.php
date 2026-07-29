@@ -13,6 +13,7 @@ use App\Entity\BalanceMovement;
 use App\Entity\User;
 use App\Repository\BalanceMovementRepository;
 use App\Repository\SettingsRepository;
+use App\Week\EventQuotaLoader;
 use App\Week\WeekLoader;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -38,6 +39,7 @@ final class BalanceController extends AbstractController
         private readonly SettingsRepository $settingsRepository,
         private readonly BalanceMovementRepository $balances,
         private readonly WeekLoader $weekLoader,
+        private readonly EventQuotaLoader $eventQuotaLoader,
         private readonly EntityManagerInterface $entityManager,
         private readonly ClockInterface $clock,
     ) {
@@ -51,7 +53,15 @@ final class BalanceController extends AbstractController
             $balances[] = ['counter' => $counter, 'amount' => $this->balances->balanceFor($user, $counter)];
         }
 
-        return $this->render('balances/index.html.twig', ['balances' => $balances]);
+        $year = (int) $this->clock->now()->format('Y');
+        $settings = $this->settingsRepository->forUser($user);
+        $eventQuotas = $this->eventQuotaLoader->load($user, $settings, $year);
+
+        return $this->render('balances/index.html.twig', [
+            'balances' => $balances,
+            'eventQuotas' => $eventQuotas,
+            'year' => $year,
+        ]);
     }
 
     /**

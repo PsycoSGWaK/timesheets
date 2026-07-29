@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Domain\Day\DayEventCode;
+use App\Domain\Day\DayQuantity;
 use App\Domain\Time\Minutes;
 use App\Entity\Settings;
 use App\Entity\User;
@@ -47,6 +49,7 @@ final class SettingsController extends AbstractController
         return $this->render('settings/index.html.twig', [
             'values' => $this->valuesOf($settings),
             'joursDeRepos' => $settings->joursDeRepos(),
+            'quotas' => $this->quotasValuesOf($settings),
             'error' => null,
         ]);
     }
@@ -61,11 +64,19 @@ final class SettingsController extends AbstractController
         // Une case décochée est simplement absente du POST : c'est le comportement
         // natif des checkboxes HTML, pas une valeur "false" à parser.
         $joursDeRepos = array_map('intval', $request->request->all('jours_de_repos'));
+        $submittedQuotas = [];
+        foreach (DayEventCode::withAnnualQuota() as $code) {
+            $submittedQuotas[$code->value] = (string) $request->request->get('quota_'.strtolower($code->value), '0');
+        }
 
         try {
             $minutes = array_map(
                 static fn (string $value): Minutes => Minutes::fromClock($value),
                 $submitted,
+            );
+            $quotasAnnuels = array_map(
+                static fn (string $value): int => DayQuantity::fromDayString('' === $value ? '0' : $value)->halfDays(),
+                $submittedQuotas,
             );
 
             $settings = $this->settingsRepository->forUser($user);
@@ -80,6 +91,7 @@ final class SettingsController extends AbstractController
                 rttMax: $minutes['rtt_max']->value(),
                 finApresMidiTeletravail: $minutes['fin_apres_midi_teletravail']->value(),
                 joursDeRepos: $joursDeRepos,
+                quotasAnnuels: $quotasAnnuels,
             );
 
             if ($isNew) {
@@ -94,6 +106,7 @@ final class SettingsController extends AbstractController
             return $this->render('settings/index.html.twig', [
                 'values' => $submitted,
                 'joursDeRepos' => $joursDeRepos,
+                'quotas' => $submittedQuotas,
                 'error' => $exception->getMessage(),
             ]);
         }
@@ -112,5 +125,18 @@ final class SettingsController extends AbstractController
         }
 
         return $values;
+    }
+
+    /**
+     * @return array<string, string> quota de chaque code annuel, indexé par sa valeur, en jours ("25" ou "25,5")
+     */
+    private function quotasValuesOf(Settings $settings): array
+    {
+        $quotas = [];
+        foreach (DayEventCode::withAnnualQuota() as $code) {
+            $quotas[$code->value] = $settings->quotaAnnuel($code)->toDayString();
+        }
+
+        return $quotas;
     }
 }

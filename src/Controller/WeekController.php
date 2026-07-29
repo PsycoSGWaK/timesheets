@@ -13,6 +13,7 @@ use App\Repository\BalanceMovementRepository;
 use App\Repository\SettingsRepository;
 use App\Week\DayEditPanel;
 use App\Week\DayEditPanelLoader;
+use App\Week\EventQuotaLoader;
 use App\Week\WeekLoader;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Clock\ClockInterface;
@@ -32,6 +33,7 @@ final class WeekController extends AbstractController
         private readonly WeekLoader $weekLoader,
         private readonly DayEditPanelLoader $dayEditPanelLoader,
         private readonly BalanceMovementRepository $balances,
+        private readonly EventQuotaLoader $eventQuotaLoader,
         private readonly WeekProjectionCalculator $projectionCalculator,
         private readonly ClockInterface $clock,
     ) {
@@ -101,6 +103,8 @@ final class WeekController extends AbstractController
             'workWeek' => $workWeek,
             'dayPanel' => $dayPanel,
             'balances' => $this->balancesOverview($user),
+            'eventQuotas' => $this->eventQuotaLoader->load($user, $settings, (int) $today->format('Y')),
+            'quotaYear' => (int) $today->format('Y'),
             'projectionReference' => $projectionReference,
             'projection' => $projection,
             'week' => $week,

@@ -106,6 +106,7 @@ final class TeletravailHalfDayCalculatorTest extends TestCase
             rttMax: 2 * 60,
             finApresMidiTeletravail: 17 * 60,
             joursDeRepos: [6, 7],
+            quotasAnnuels: [],
         );
 
         $worked = (new TeletravailHalfDayCalculator())->compute(DayHalf::ApresMidi, [], $custom);

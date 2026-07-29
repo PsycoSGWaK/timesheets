@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Entity;
 
+use App\Domain\Day\DayEventCode;
 use App\Entity\Settings;
 use App\Entity\User;
 use PHPUnit\Framework\Attributes\Test;
@@ -24,6 +25,7 @@ final class SettingsTest extends TestCase
         self::assertSame(2 * 60, $settings->rttMax()->value());
         self::assertSame(16 * 60, $settings->finApresMidiTeletravail()->value());
         self::assertSame([6, 7], $settings->joursDeRepos());
+        self::assertSame(0, $settings->quotaAnnuel(DayEventCode::CongePaye)->halfDays());
     }
 
     #[Test]
@@ -59,6 +61,7 @@ final class SettingsTest extends TestCase
             rttMax: 2 * 60,
             finApresMidiTeletravail: 16 * 60,
             joursDeRepos: [3, 6, 7],
+            quotasAnnuels: [],
         );
 
         self::assertSame(4, $settings->joursOuvresParSemaine());
@@ -95,6 +98,7 @@ final class SettingsTest extends TestCase
             rttMax: 3 * 60,
             finApresMidiTeletravail: 17 * 60,
             joursDeRepos: [7],
+            quotasAnnuels: [],
         );
 
         self::assertSame(20, $settings->pauseMinimale()->value());
@@ -105,6 +109,69 @@ final class SettingsTest extends TestCase
         self::assertSame(3 * 60, $settings->rttMax()->value());
         self::assertSame(17 * 60, $settings->finApresMidiTeletravail()->value());
         self::assertSame([7], $settings->joursDeRepos());
+    }
+
+    #[Test]
+    public function annual_quotas_can_be_set_and_read_back(): void
+    {
+        $settings = Settings::defaults($this->user());
+
+        $settings->update(
+            pauseMinimale: 30,
+            fenetreDebut: 11 * 60 + 30,
+            fenetreFin: 14 * 60,
+            journeeReferenceContractuelle: 7 * 60,
+            journeeReferenceEffective: 7 * 60 + 24,
+            rttMax: 2 * 60,
+            finApresMidiTeletravail: 16 * 60,
+            joursDeRepos: [6, 7],
+            quotasAnnuels: ['CP' => 50, 'TT' => 97],
+        );
+
+        self::assertSame(50, $settings->quotaAnnuel(DayEventCode::CongePaye)->halfDays());
+        self::assertSame(97, $settings->quotaAnnuel(DayEventCode::Teletravail)->halfDays());
+        // Non configuré explicitement : vaut zéro, pas une erreur.
+        self::assertSame(0, $settings->quotaAnnuel(DayEventCode::Rtt)->halfDays());
+    }
+
+    #[Test]
+    public function it_rejects_a_negative_annual_quota(): void
+    {
+        $settings = Settings::defaults($this->user());
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        $settings->update(
+            pauseMinimale: 30,
+            fenetreDebut: 11 * 60 + 30,
+            fenetreFin: 14 * 60,
+            journeeReferenceContractuelle: 7 * 60,
+            journeeReferenceEffective: 7 * 60 + 24,
+            rttMax: 2 * 60,
+            finApresMidiTeletravail: 16 * 60,
+            joursDeRepos: [6, 7],
+            quotasAnnuels: ['CP' => -1],
+        );
+    }
+
+    #[Test]
+    public function it_rejects_a_quota_for_a_code_without_annual_quota(): void
+    {
+        $settings = Settings::defaults($this->user());
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        $settings->update(
+            pauseMinimale: 30,
+            fenetreDebut: 11 * 60 + 30,
+            fenetreFin: 14 * 60,
+            journeeReferenceContractuelle: 7 * 60,
+            journeeReferenceEffective: 7 * 60 + 24,
+            rttMax: 2 * 60,
+            finApresMidiTeletravail: 16 * 60,
+            joursDeRepos: [6, 7],
+            quotasAnnuels: ['NOPE' => 10],
+        );
     }
 
     #[Test]
@@ -123,6 +190,7 @@ final class SettingsTest extends TestCase
             rttMax: 2 * 60,
             finApresMidiTeletravail: 16 * 60,
             joursDeRepos: [6, 7],
+            quotasAnnuels: [],
         );
     }
 
@@ -142,6 +210,7 @@ final class SettingsTest extends TestCase
             rttMax: 2 * 60,
             finApresMidiTeletravail: 16 * 60,
             joursDeRepos: [6, 7],
+            quotasAnnuels: [],
         );
     }
 
@@ -164,6 +233,7 @@ final class SettingsTest extends TestCase
             rttMax: 2 * 60,
             finApresMidiTeletravail: 11 * 60,
             joursDeRepos: [6, 7],
+            quotasAnnuels: [],
         );
     }
 
@@ -183,6 +253,7 @@ final class SettingsTest extends TestCase
             rttMax: 2 * 60,
             finApresMidiTeletravail: 16 * 60,
             joursDeRepos: [0, 6],
+            quotasAnnuels: [],
         );
     }
 
@@ -203,6 +274,7 @@ final class SettingsTest extends TestCase
             rttMax: 2 * 60,
             finApresMidiTeletravail: 16 * 60,
             joursDeRepos: [1, 2, 3, 4, 5, 6, 7],
+            quotasAnnuels: [],
         );
     }
 
@@ -220,6 +292,7 @@ final class SettingsTest extends TestCase
             rttMax: 2 * 60,
             finApresMidiTeletravail: 16 * 60,
             joursDeRepos: [6, 6, 7, 7],
+            quotasAnnuels: [],
         );
 
         self::assertSame([6, 7], $settings->joursDeRepos());

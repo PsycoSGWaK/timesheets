@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Domain\Day\DayEventCode;
 use App\Entity\DayEvent;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -51,5 +52,26 @@ final class DayEventRepository extends ServiceEntityRepository
     public function findOneByDate(User $user, \DateTimeImmutable $date): ?DayEvent
     {
         return $this->findOneBy(['user' => $user, 'date' => $date->setTime(0, 0, 0, 0)]);
+    }
+
+    /**
+     * Les événements d'un code donné déclarés sur une année civile — sert au
+     * décompte annuel (spec du 29/07/2026).
+     *
+     * @return list<DayEvent>
+     */
+    public function findByCodeAndYear(User $user, DayEventCode $code, int $year): array
+    {
+        return $this->createQueryBuilder('e')
+            ->andWhere('e.user = :user')
+            ->andWhere('e.code = :code')
+            ->andWhere('e.date >= :start')
+            ->andWhere('e.date <= :end')
+            ->setParameter('user', $user)
+            ->setParameter('code', $code)
+            ->setParameter('start', new \DateTimeImmutable(sprintf('%d-01-01', $year)))
+            ->setParameter('end', new \DateTimeImmutable(sprintf('%d-12-31', $year)))
+            ->getQuery()
+            ->getResult();
     }
 }

@@ -126,6 +126,7 @@ final class LeaveTimeCalculatorTest extends TestCase
             rttMax: 2 * 60,
             finApresMidiTeletravail: 16 * 60,
             joursDeRepos: [6, 7],
+            quotasAnnuels: [],
         );
 
         $estimate = (new LeaveTimeCalculator())->estimate(
