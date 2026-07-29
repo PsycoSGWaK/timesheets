@@ -157,7 +157,6 @@ final class SettingsTest extends TestCase
     #[Test]
     public function it_rejects_a_quota_for_a_code_without_annual_quota(): void
     {
-        // CA (congé ancienneté) n'a volontairement pas de quota (spec du 29/07/2026).
         $settings = Settings::defaults($this->user());
 
         $this->expectException(\InvalidArgumentException::class);
@@ -171,7 +170,7 @@ final class SettingsTest extends TestCase
             rttMax: 2 * 60,
             finApresMidiTeletravail: 16 * 60,
             joursDeRepos: [6, 7],
-            quotasAnnuels: ['CA' => 10],
+            quotasAnnuels: ['NOPE' => 10],
         );
     }
 

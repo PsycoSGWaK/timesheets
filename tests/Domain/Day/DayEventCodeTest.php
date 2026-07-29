@@ -65,16 +65,16 @@ final class DayEventCodeTest extends TestCase
     }
 
     #[Test]
-    public function annual_quotas_apply_to_cp_tt_rtt_and_jf_but_not_ca(): void
+    public function annual_quotas_apply_to_all_five_day_based_codes(): void
     {
-        // Demande du 29/07/2026 : CA (congé ancienneté) volontairement exclu.
+        // Demande du 29/07/2026 (CP/TT/RTT/JF), CA ajouté le 30/07/2026.
         $withQuota = DayEventCode::withAnnualQuota();
 
-        self::assertCount(4, $withQuota);
+        self::assertCount(5, $withQuota);
         self::assertContains(DayEventCode::CongePaye, $withQuota);
+        self::assertContains(DayEventCode::CongeAnciennete, $withQuota);
         self::assertContains(DayEventCode::Teletravail, $withQuota);
         self::assertContains(DayEventCode::Rtt, $withQuota);
         self::assertContains(DayEventCode::JourFerie, $withQuota);
-        self::assertNotContains(DayEventCode::CongeAnciennete, $withQuota);
     }
 }

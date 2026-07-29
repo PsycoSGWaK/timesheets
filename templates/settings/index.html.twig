@@ -84,7 +84,7 @@
 
         <label>Quotas annuels <span class="field-hint">(en jours, ex. "25" ou "25,5" — décompte visible dans Compteurs)</span></label>
         <div class="quotas">
-            {% set codeLabels = {'CP': 'Congé payé', 'TT': 'Télétravail', 'RTT': 'RTT posé', 'JF': 'Jour férié'} %}
+            {% set codeLabels = {'CP': 'Congé payé', 'CA': 'Congé ancienneté', 'TT': 'Télétravail', 'RTT': 'RTT posé', 'JF': 'Jour férié'} %}
             {% for code, label in codeLabels %}
                 <div>
                     <label for="quota_{{ code|lower }}">{{ label }}</label>
