@@ -59,10 +59,12 @@ final class WorkWeekAssembler
             $event = $eventsByDate[$key] ?? null;
 
             $fact = $this->dailyCalculator->calculate($date, $settings, ...$dayPunches);
-            // Tous les pointages du jour (y compris prévisionnels) : un TT en
-            // demi-journée précise s'appuie sur des horaires saisis avant tout
-            // pointage réel — le seul indice disponible tant qu'aucun n'existe.
-            $fact = $this->eventValorizer->valorize($fact, $allByDate[$key] ?? [], $event, $settings);
+            if (!$settings->estJourDeRepos($date)) {
+                // Tous les pointages du jour (y compris prévisionnels) : un TT en
+                // demi-journée précise s'appuie sur des horaires saisis avant tout
+                // pointage réel — le seul indice disponible tant qu'aucun n'existe.
+                $fact = $this->eventValorizer->valorize($fact, $allByDate[$key] ?? [], $event, $settings);
+            }
             $dayFacts[] = $fact;
 
             $reading = $employerReadingsByDate[$key] ?? null;
