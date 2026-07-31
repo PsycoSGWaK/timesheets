@@ -49,6 +49,7 @@ final class ProjectionControllerTest extends WebTestCase
             'lunch_departure' => '11:47',
             'lunch_return' => '12:13',
         ]);
+        $this->client->followRedirect();
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('.leave', '16:42');
@@ -62,6 +63,7 @@ final class ProjectionControllerTest extends WebTestCase
             'lunch_departure' => '11:47',
             'lunch_return' => '12:13',
         ]);
+        $this->client->followRedirect();
 
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('.error');

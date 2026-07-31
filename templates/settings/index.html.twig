@@ -49,7 +49,7 @@
         <p class="error">Valeur illisible : {{ error }}</p>
     {% endif %}
 
-    <form method="post" action="{{ path('settings_save') }}">
+    <form method="post" action="{{ path('settings_save') }}" data-turbo="false">
         <label for="pause_minimale">Pause déjeuner minimale <span class="field-hint">(en dessous, la différence est décomptée)</span></label>
         <input type="time" id="pause_minimale" name="pause_minimale" value="{{ values.pause_minimale }}" required>
 
