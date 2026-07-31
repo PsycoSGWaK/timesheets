@@ -44,7 +44,7 @@
         <p class="error">Horaire illisible : {{ error }}</p>
     {% endif %}
 
-    <form method="post" action="{{ path('projection') }}">
+    <form method="post" action="{{ path('projection_calculate') }}">
         <label for="morning_start">Prise de poste</label>
         <input type="time" id="morning_start" name="morning_start" value="{{ morningStart }}" required>
 
