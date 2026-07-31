@@ -53,4 +53,21 @@ final class EmployerReadingRepository extends ServiceEntityRepository
 
         return $latest;
     }
+
+    /**
+     * Tous les relevés d'une date (l'historique append-only peut en contenir
+     * plusieurs) — pour les supprimer d'un coup quand un import s'est trompé.
+     *
+     * @return list<EmployerReading>
+     */
+    public function findByDate(User $user, \DateTimeImmutable $date): array
+    {
+        return $this->createQueryBuilder('r')
+            ->andWhere('r.user = :user')
+            ->andWhere('r.date = :date')
+            ->setParameter('user', $user)
+            ->setParameter('date', $date->setTime(0, 0, 0, 0))
+            ->getQuery()
+            ->getResult();
+    }
 }
