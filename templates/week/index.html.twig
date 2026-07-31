@@ -303,11 +303,12 @@
                 <tr class="{{ reco.needsAttention ? 'row-' ~ tone : '' }}">
                     <td><a href="{{ path('week', {year: monday|date('o'), week: week, jour: day.date|date('Y-m-d')}) }}">{{ jours[day.date|date('N')] }} {{ day.date|date('d/m') }}</a></td>
                     <td>
-                        {% if reco.status.value == 'repos' %}
+                        {% if reco.status.value == 'repos' and not day.event %}
                             <span class="event-badge event-badge--repos">Repos</span>
                         {% elseif day.event %}
                             <span class="event-badge">
                                 {{ day.event.code.label }}{% if day.event.half %} — {{ day.event.half.label }}{% endif %}
+                                {% if reco.status.value == 'repos' %}<span class="muted">(jour de repos, non compté)</span>{% endif %}
                                 <form method="post" action="{{ path('day_event_remove') }}">
                                     <input type="hidden" name="date" value="{{ day.date|date('Y-m-d') }}">
                                     <button type="submit" title="Retirer">×</button>

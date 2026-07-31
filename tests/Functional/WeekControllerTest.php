@@ -164,6 +164,55 @@ final class WeekControllerTest extends WebTestCase
     }
 
     #[Test]
+    public function the_quota_follows_the_year_of_the_week_viewed_not_todays_year(): void
+    {
+        // Régression du 31/07/2026 : le décompte annuel utilisait toujours l'année
+        // du jour courant, si bien que consulter une semaine de 2025 décomptait sur
+        // le quota 2026 (et ça aurait recommencé chaque 1er janvier).
+        $this->client->request('POST', '/parametres', [
+            'pause_minimale' => '00:30', 'fenetre_debut' => '11:30', 'fenetre_fin' => '14:00',
+            'journee_reference_contractuelle' => '07:00', 'journee_reference_effective' => '07:24',
+            'rtt_max' => '02:00', 'fin_apres_midi_teletravail' => '16:00',
+            'jours_de_repos' => ['6', '7'],
+            'quota_jf' => '11',
+        ]);
+        $this->client->request('POST', '/semaine/evenement', [
+            'date' => '2025-07-28', 'code' => 'JF', 'portion' => 'full',
+        ]);
+
+        // Semaine 31 de 2025 : contient le 28/07/2025, le quota 2025 doit refléter l'usage.
+        $this->client->request('GET', '/semaine/2025/31');
+        self::assertSelectorTextContains('.balances-panel', '10 j'); // 11 - 1 restant
+
+        // Semaine 31 de 2026 : quota 2026 intact, aucun événement posé cette année.
+        $this->client->request('GET', '/semaine/2026/31');
+        self::assertSelectorTextContains('.balances-panel', '11 j'); // rien décompté
+    }
+
+    #[Test]
+    public function an_event_lingering_on_a_rest_day_stays_visible_and_removable(): void
+    {
+        // Régression du 31/07/2026 : un événement pose par erreur (ou en test) sur
+        // un jour de repos disparaissait purement et simplement derriere le badge
+        // "Repos", sans bouton pour le retirer — tout en continuant à polluer le
+        // décompte annuel du quota.
+        $this->client->request('POST', '/semaine/evenement', [
+            'date' => '2026-07-26', 'code' => 'TT', 'portion' => 'full', // dimanche, repos par défaut
+        ]);
+
+        $crawler = $this->client->request('GET', '/semaine/2026/30');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.week-table', 'Télétravail');
+        self::assertSelectorExists('.week-table form[action="/semaine/evenement/supprimer"]');
+
+        $this->client->request('POST', '/semaine/evenement/supprimer', ['date' => '2026-07-26']);
+        $crawler = $this->client->request('GET', '/semaine/2026/30');
+
+        self::assertSelectorNotExists('.week-table form[action="/semaine/evenement/supprimer"]');
+    }
+
+    #[Test]
     public function it_jumps_directly_to_the_week_picked_in_the_native_picker(): void
     {
         // <input type="week"> soumet un format YYYY-Www.
