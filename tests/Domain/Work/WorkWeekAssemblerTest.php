@@ -80,9 +80,10 @@ final class WorkWeekAssemblerTest extends TestCase
     }
 
     #[Test]
-    public function provisional_punches_are_ignored_in_the_official_recalculation(): void
+    public function a_provisional_punch_counts_toward_nous_until_the_real_one_arrives(): void
     {
-        // Un pointage prévisionnel n'entre pas dans le décompte officiel.
+        // Sans ça, "Nous" resterait à 0h00 tant qu'ADP n'a rien livré et la
+        // comparaison avec la colonne ADP n'aurait aucun sens.
         $punches = [
             PunchEvent::provisional($this->user, new \DateTimeImmutable('2026-07-22'), Minutes::fromClock('08:00'), 1),
             PunchEvent::provisional($this->user, new \DateTimeImmutable('2026-07-22'), Minutes::fromClock('16:00'), 2),
@@ -91,8 +92,26 @@ final class WorkWeekAssemblerTest extends TestCase
         $week = $this->assemble($punches, []);
 
         $wednesday = $week->days()[2];
-        self::assertSame(0, $wednesday->dayFact()->workedMinutes()->value());
+        self::assertSame(480, $wednesday->dayFact()->workedMinutes()->value());
         self::assertSame(ReconciliationStatus::NoReading, $wednesday->reconciliation()->status());
+    }
+
+    #[Test]
+    public function a_real_punch_takes_precedence_over_a_lingering_provisional_one(): void
+    {
+        // Ne devrait pas arriver en pratique (DayController bascule tout complément
+        // en correction réelle dès qu'un pointage réel existe), mais si les deux
+        // cohabitaient, le réel doit l'emporter sans se mélanger au prévisionnel.
+        $punches = [
+            PunchEvent::provisional($this->user, new \DateTimeImmutable('2026-07-22'), Minutes::fromClock('07:00'), 1),
+            PunchEvent::realFromAdp($this->user, new \DateTimeImmutable('2026-07-22'), Minutes::fromClock('08:00'), 1),
+            PunchEvent::realFromAdp($this->user, new \DateTimeImmutable('2026-07-22'), Minutes::fromClock('16:00'), 2),
+        ];
+
+        $week = $this->assemble($punches, []);
+
+        $wednesday = $week->days()[2];
+        self::assertSame(480, $wednesday->dayFact()->workedMinutes()->value());
     }
 
     #[Test]
