@@ -55,7 +55,13 @@ final class WorkWeekAssembler
 
         foreach ($dates as $date) {
             $key = $date->format('Y-m-d');
-            $dayPunches = $probativeByDate[$key] ?? [];
+            // Le réel prime dès qu'il existe ; à défaut, le prévisionnel sert de
+            // meilleure estimation disponible pour « Nous », sans quoi la colonne
+            // resterait à 0h00 tant qu'ADP n'a rien livré et l'écart n'aurait aucun
+            // sens. Les deux natures ne se mélangent jamais sur un même jour : dès
+            // qu'un pointage réel existe, tout complément devient une correction
+            // manuelle elle-même réelle ({@see DayController::save}).
+            $dayPunches = $probativeByDate[$key] ?? ($allByDate[$key] ?? []);
             $event = $eventsByDate[$key] ?? null;
 
             $fact = $this->dailyCalculator->calculate($date, $settings, ...$dayPunches);
@@ -91,8 +97,7 @@ final class WorkWeekAssembler
     {
         $byDate = [];
         foreach ($punches as $punch) {
-            // Seuls les pointages réels comptent dans le décompte officiel ; les
-            // prévisionnels servent à la projection, pas à la valeur probante.
+            // Le réel prime sur le prévisionnel quand les deux existent pour un jour.
             if ($punch->isProbative()) {
                 $byDate[$punch->date()->format('Y-m-d')][] = $punch;
             }
