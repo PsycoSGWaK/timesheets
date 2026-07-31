@@ -19,6 +19,7 @@ final readonly class WorkWeek
      */
     public function __construct(
         private WeekFact $weekFact,
+        private WeekFact $estimatedWeekFact,
         private array $days,
     ) {
     }
@@ -26,6 +27,15 @@ final readonly class WorkWeek
     public function weekFact(): WeekFact
     {
         return $this->weekFact;
+    }
+
+    /**
+     * Agrégat basé sur « Nous » (réel, prévisionnel en secours) : une projection
+     * affichée à part, qui n'alimente jamais RTT/heures sup/"Travaillé".
+     */
+    public function estimatedWeekFact(): WeekFact
+    {
+        return $this->estimatedWeekFact;
     }
 
     /**
