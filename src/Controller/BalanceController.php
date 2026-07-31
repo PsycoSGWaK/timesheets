@@ -24,10 +24,12 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 
 /**
- * Les compteurs (spec §2) : RTT, et les trois destins d'une heure supplémentaire
- * (Récupération, Variable, Paiement). `Dispo`, `Transfert` et `Boni` restent hors
- * périmètre — leur alimentation n'est pas documentée (§8.3), confirmé par
- * Guillaume le 28/07/2026.
+ * Les compteurs (spec §2) : RTT (crédité automatiquement, {@see \App\Balance\RttWeekCreditor}),
+ * et les deux destins d'une heure supplémentaire (Récupération, Paiement — une
+ * heure sup est soit payée soit récupérée, jamais autre chose). `Dispo`,
+ * `Transfert`, `Boni` et l'ancien compteur `Variable` restent hors périmètre —
+ * leur alimentation n'est pas documentée (§8.3), confirmé par Guillaume le
+ * 28/07/2026 et le 31/07/2026.
  *
  * Les montants crédités ne viennent jamais du client : ils sont recalculés
  * côté serveur ({@see WorkWeekAssembler}) pour la semaine concernée, jamais
@@ -65,39 +67,7 @@ final class BalanceController extends AbstractController
     }
 
     /**
-     * Crédite le RTT acquis d'une semaine (spec §4.3, plafonné à 2h). Remplace le
-     * crédit existant plutôt que de le doubler si la semaine est recréditée après
-     * un recalcul (édition de pointages passés, par exemple).
-     */
-    #[Route('/semaine/{year}/{week}/rtt', name: 'balance_credit_rtt', requirements: ['year' => '\d{4}', 'week' => '\d{1,2}'], methods: ['POST'])]
-    public function creditRtt(int $year, int $week, #[CurrentUser] User $user): Response
-    {
-        $monday = IsoWeek::dates($year, $week)[0];
-        $rttAcquired = $this->weekFact($user, $year, $week)->rttAcquired();
-
-        $existing = $this->balances->findRttCreditForWeek($user, $monday);
-        if (null !== $existing) {
-            $this->entityManager->remove($existing);
-            $this->entityManager->flush();
-        }
-
-        if ($rttAcquired->value() > 0) {
-            $this->entityManager->persist(BalanceMovement::credit(
-                $user,
-                BalanceCounter::Rtt,
-                $rttAcquired,
-                $monday,
-                $this->clock->now(),
-                sprintf('RTT acquis semaine %d/%d', $week, $year),
-            ));
-            $this->entityManager->flush();
-        }
-
-        return $this->redirectToRoute('week', ['year' => $year, 'week' => $week]);
-    }
-
-    /**
-     * Répartit les heures supplémentaires d'une semaine entre les trois destins
+     * Répartit les heures supplémentaires d'une semaine entre ses deux destins
      * (spec §2). Ne peut pas dépasser ce qui reste réellement disponible : la part
      * déjà allouée (mouvements précédents sur cette semaine) est déduite du total
      * recalculé avant d'accepter la nouvelle allocation.
@@ -112,7 +82,6 @@ final class BalanceController extends AbstractController
         // de clé de tableau PHP.
         $requested = [
             BalanceCounter::Recuperation->value => (string) $request->request->get('recuperation', '00:00'),
-            BalanceCounter::Variable->value => (string) $request->request->get('variable', '00:00'),
             BalanceCounter::Paiement->value => (string) $request->request->get('paiement', '00:00'),
         ];
 
@@ -170,13 +139,13 @@ final class BalanceController extends AbstractController
 
     /**
      * La part des heures supplémentaires de cette semaine déjà allouée à un destin
-     * (somme des crédits Récupération/Variable/Paiement datés du lundi de la semaine).
+     * (somme des crédits Récupération/Paiement datés du lundi de la semaine).
      */
     private function allocatedOvertimeFor(User $user, \DateTimeImmutable $monday): Minutes
     {
         $total = Minutes::of(0);
         foreach ($this->balances->findByUserAndDate($user, $monday) as $movement) {
-            if (\in_array($movement->counter(), [BalanceCounter::Recuperation, BalanceCounter::Variable, BalanceCounter::Paiement], true)
+            if (\in_array($movement->counter(), [BalanceCounter::Recuperation, BalanceCounter::Paiement], true)
                 && $movement->isCredit()) {
                 $total = $total->plus($movement->amount());
             }

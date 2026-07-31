@@ -43,7 +43,6 @@ final class BalanceControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'RTT');
         self::assertSelectorTextContains('body', 'Récupération');
-        self::assertSelectorTextContains('body', 'Variable');
         self::assertSelectorTextContains('body', 'Paiement');
     }
 
@@ -71,24 +70,25 @@ final class BalanceControllerTest extends WebTestCase
     }
 
     #[Test]
-    public function crediting_a_weeks_rtt_uses_the_recomputed_amount_not_a_client_supplied_one(): void
+    public function viewing_the_week_credits_its_rtt_with_the_recomputed_amount(): void
     {
         // Semaine pleine à 7h24/jour x 5 = 37h : 2h de RTT (plafond), spec §4.3.
+        // Le crédit se déclenche tout seul à l'affichage, sans bouton (règle du 31/07/2026).
         $this->importFullWeek();
 
-        $this->client->request('POST', '/semaine/2026/30/rtt', ['minutes_falsifie' => '99999']);
+        $this->client->request('GET', '/semaine/2026/30');
 
-        self::assertResponseRedirects();
+        self::assertResponseIsSuccessful();
         self::assertSame(120, $this->balanceRepository()->balanceFor($this->currentUser(), BalanceCounter::Rtt)->value());
     }
 
     #[Test]
-    public function crediting_the_same_week_twice_replaces_instead_of_doubling(): void
+    public function viewing_the_same_week_twice_replaces_instead_of_doubling(): void
     {
         $this->importFullWeek();
 
-        $this->client->request('POST', '/semaine/2026/30/rtt');
-        $this->client->request('POST', '/semaine/2026/30/rtt');
+        $this->client->request('GET', '/semaine/2026/30');
+        $this->client->request('GET', '/semaine/2026/30');
 
         self::assertSame(120, $this->balanceRepository()->balanceFor($this->currentUser(), BalanceCounter::Rtt)->value());
     }
@@ -100,7 +100,6 @@ final class BalanceControllerTest extends WebTestCase
 
         $this->client->request('POST', '/semaine/2026/30/heures-sup', [
             'recuperation' => '00:30',
-            'variable' => '00:00',
             'paiement' => '00:00',
             'motif' => 'Test allocation',
         ]);
@@ -116,7 +115,6 @@ final class BalanceControllerTest extends WebTestCase
 
         $this->client->request('POST', '/semaine/2026/30/heures-sup', [
             'recuperation' => '01:00',
-            'variable' => '00:00',
             'paiement' => '00:00',
             'motif' => '',
         ]);

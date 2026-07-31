@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Balance\RttWeekCreditor;
 use App\Domain\Balance\BalanceCounter;
 use App\Domain\Projection\WeekProjectionCalculator;
 use App\Domain\Week\IsoWeek;
@@ -35,6 +36,7 @@ final class WeekController extends AbstractController
         private readonly BalanceMovementRepository $balances,
         private readonly EventQuotaLoader $eventQuotaLoader,
         private readonly WeekProjectionCalculator $projectionCalculator,
+        private readonly RttWeekCreditor $rttWeekCreditor,
         private readonly ClockInterface $clock,
     ) {
     }
@@ -79,6 +81,13 @@ final class WeekController extends AbstractController
         $settings = $this->settingsRepository->forUser($user);
 
         $workWeek = $this->weekLoader->load($user, $dates, $today, $settings);
+        $this->rttWeekCreditor->sync(
+            $user,
+            $monday,
+            $workWeek->weekFact()->isoYear(),
+            $workWeek->weekFact()->isoWeek(),
+            $workWeek->weekFact()->rttAcquired(),
+        );
         $dayPanel = $this->loadDayPanel($request, $user, $settings);
 
         $remainingWorkingDays = $this->countRemainingWorkingDays($dates, $today, $settings);

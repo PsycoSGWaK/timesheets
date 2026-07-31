@@ -233,11 +233,6 @@
         <div class="stat-tile">
             <span class="stat-tile__label">RTT acquis</span>
             <span class="stat-tile__value">{{ workWeek.weekFact.rttAcquired.value|duree }}</span>
-            {% if workWeek.weekFact.rttAcquired.value > 0 %}
-                <form class="stat-tile__action" method="post" action="{{ path('balance_credit_rtt', {year: monday|date('o'), week: week}) }}">
-                    <button type="submit">Créditer ce RTT</button>
-                </form>
-            {% endif %}
         </div>
         <div class="stat-tile{{ workWeek.weekFact.overtimeMinutes.value > 0 ? ' stat-tile--overtime' : '' }}">
             <span class="stat-tile__label">Heures sup.</span>
@@ -253,10 +248,6 @@
                     <div>
                         <label for="recuperation">Récupération</label>
                         <input type="time" id="recuperation" name="recuperation" value="00:00">
-                    </div>
-                    <div>
-                        <label for="variable">Variable</label>
-                        <input type="time" id="variable" name="variable" value="00:00">
                     </div>
                     <div>
                         <label for="paiement">Paiement</label>
