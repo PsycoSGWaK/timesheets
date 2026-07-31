@@ -108,12 +108,17 @@ final class WeekController extends AbstractController
         $previous = $monday->modify('-7 days');
         $next = $monday->modify('+7 days');
 
+        // L'année du quota est celle de la semaine affichée, pas celle du jour
+        // courant : sinon consulter une semaine de 2025 décomptait sur le quota
+        // 2026, et ça recommencerait chaque 1er janvier (règle du 31/07/2026).
+        $quotaYear = (int) $monday->format('Y');
+
         return $this->render('week/index.html.twig', [
             'workWeek' => $workWeek,
             'dayPanel' => $dayPanel,
             'balances' => $this->balancesOverview($user),
-            'eventQuotas' => $this->eventQuotaLoader->load($user, $settings, (int) $today->format('Y')),
-            'quotaYear' => (int) $today->format('Y'),
+            'eventQuotas' => $this->eventQuotaLoader->load($user, $settings, $quotaYear),
+            'quotaYear' => $quotaYear,
             'projectionReference' => $projectionReference,
             'projection' => $projection,
             'week' => $week,
