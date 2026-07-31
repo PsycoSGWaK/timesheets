@@ -114,28 +114,27 @@ final class WeekControllerTest extends WebTestCase
     }
 
     #[Test]
-    public function the_balances_panel_shows_all_four_counters(): void
+    public function the_balances_panel_shows_all_three_counters(): void
     {
         $this->client->request('GET', '/semaine/2026/30');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('.balances-panel', 'RTT');
         self::assertSelectorTextContains('.balances-panel', 'Récupération');
-        self::assertSelectorTextContains('.balances-panel', 'Variable');
         self::assertSelectorTextContains('.balances-panel', 'Paiement');
-        self::assertSelectorCount(4, '.balances-table tbody tr');
+        self::assertSelectorCount(3, '.balances-table tbody tr');
     }
 
     #[Test]
-    public function the_balances_panel_reflects_a_credited_rtt(): void
+    public function the_balances_panel_reflects_the_rtt_credited_automatically(): void
     {
-        // 20/07 au 24/07 : 5 jours à 7h24 (37h) -> 2h de RTT acquis (plafond).
+        // 20/07 au 24/07 : 5 jours à 7h24 (37h) -> 2h de RTT acquis (plafond),
+        // crédité tout seul à l'affichage de la semaine (règle du 31/07/2026).
         $this->client->request('POST', '/import', [
             'payload' => $this->fullWeekPaste(),
             'year' => 2026,
             'action' => 'importer',
         ]);
-        $this->client->request('POST', '/semaine/2026/30/rtt');
 
         $crawler = $this->client->request('GET', '/semaine/2026/30');
 

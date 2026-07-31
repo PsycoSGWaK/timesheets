@@ -11,8 +11,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * Un mouvement sur un compteur : le RTT (crédité chaque semaine, débité quand on
- * pose un jour) ou l'un des trois destins d'une heure supplémentaire — Récupération,
- * Variable, Paiement (spec §2). Append-only, comme {@see EmployerReading} : jamais
+ * pose un jour) ou l'un des deux destins d'une heure supplémentaire — Récupération,
+ * Paiement (spec §2). Append-only, comme {@see EmployerReading} : jamais
  * modifié ni supprimé pour corriger une erreur, on ajoute un mouvement compensateur.
  *
  * Le solde d'un compteur n'est jamais stocké : il se recalcule en sommant ses
