@@ -23,21 +23,21 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
  */
 final class ProjectionController extends AbstractController
 {
-    #[Route('/quand-partir', name: 'projection', methods: ['GET', 'POST'])]
+    #[Route('/quand-partir', name: 'projection', methods: ['GET'])]
     public function projection(
         Request $request,
         LeaveTimeCalculator $calculator,
         SettingsRepository $settingsRepository,
         #[CurrentUser] User $user,
     ): Response {
-        $morningStart = (string) $request->request->get('morning_start', '');
-        $lunchDeparture = (string) $request->request->get('lunch_departure', '');
-        $lunchReturn = (string) $request->request->get('lunch_return', '');
+        $morningStart = (string) $request->query->get('morning_start', '');
+        $lunchDeparture = (string) $request->query->get('lunch_departure', '');
+        $lunchReturn = (string) $request->query->get('lunch_return', '');
 
         $estimate = null;
         $error = null;
 
-        if ($request->isMethod('POST')) {
+        if ('' !== $morningStart || '' !== $lunchDeparture || '' !== $lunchReturn) {
             try {
                 $estimate = $calculator->estimate(
                     Minutes::fromClock($morningStart),
@@ -56,6 +56,20 @@ final class ProjectionController extends AbstractController
             'lunchReturn' => $lunchReturn,
             'estimate' => $estimate,
             'error' => $error,
+        ]);
+    }
+
+    /**
+     * Turbo Drive exige qu'une réponse à un POST redirige (pattern PRG) ;
+     * le calcul lui-même reste porté par la route GET, rejouable et partageable par URL.
+     */
+    #[Route('/quand-partir', name: 'projection_calculate', methods: ['POST'])]
+    public function calculate(Request $request): Response
+    {
+        return $this->redirectToRoute('projection', [
+            'morning_start' => (string) $request->request->get('morning_start', ''),
+            'lunch_departure' => (string) $request->request->get('lunch_departure', ''),
+            'lunch_return' => (string) $request->request->get('lunch_return', ''),
         ]);
     }
 }
