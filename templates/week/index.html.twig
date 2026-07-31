@@ -3,7 +3,7 @@
 {% block title %}Semaine {{ week }} — {{ monday|date('d/m/Y') }}{% endblock %}
 
 {% block stylesheets %}
-<style>
+<style data-turbo-track="reload">
     main { max-width: {{ dayPanel ? '1540px' : '1200px' }}; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
     .week-layout { display: flex; gap: 1.5rem; align-items: flex-start; }
     .week-main { flex: 1 1 auto; min-width: 0; }
