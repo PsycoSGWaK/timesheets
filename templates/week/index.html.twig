@@ -280,9 +280,6 @@
                 <span class="projection-target__label">{{ target.label }}</span>
                 {% if p.objectiveReached %}
                     Objectif atteint.
-                    {% if p.overtimeSoFar.value > 0 %}
-                        <strong>{{ p.overtimeSoFar.value|duree }}</strong> au-delà.
-                    {% endif %}
                 {% elseif p.remainingWorkingDays > 0 %}
                     Il reste <strong>{{ p.remainingToObjective.value|duree }}</strong>,
                     soit <strong>{{ p.targetPerRemainingDay.value|duree }}</strong> par jour
