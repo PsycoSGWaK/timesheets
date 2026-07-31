@@ -51,41 +51,56 @@ final class WorkWeekAssembler
         $allByDate = $this->groupPunchesByDate($punches);
 
         $workDays = [];
-        $dayFacts = [];
+        $officialFacts = [];
+        $estimatedFacts = [];
 
         foreach ($dates as $date) {
             $key = $date->format('Y-m-d');
-            // Le réel prime dès qu'il existe ; à défaut, le prévisionnel sert de
-            // meilleure estimation disponible pour « Nous », sans quoi la colonne
-            // resterait à 0h00 tant qu'ADP n'a rien livré et l'écart n'aurait aucun
-            // sens. Les deux natures ne se mélangent jamais sur un même jour : dès
-            // qu'un pointage réel existe, tout complément devient une correction
-            // manuelle elle-même réelle ({@see DayController::save}).
-            $dayPunches = $probativeByDate[$key] ?? ($allByDate[$key] ?? []);
             $event = $eventsByDate[$key] ?? null;
+            $isRepos = $settings->estJourDeRepos($date);
 
-            $fact = $this->dailyCalculator->calculate($date, $settings, ...$dayPunches);
-            if (!$settings->estJourDeRepos($date)) {
+            // Deux journées distinctes : l'officielle (RTT, heures sup, "Travaillé")
+            // ne compte jamais une simple hypothèse, seul le réel ADP l'alimente ;
+            // l'estimée sert « Nous » et l'écart, avec le prévisionnel en secours
+            // tant que le réel n'est pas arrivé — sans quoi elle resterait à 0h00.
+            $officialPunches = $probativeByDate[$key] ?? [];
+            $estimatedPunches = $officialPunches ?: ($allByDate[$key] ?? []);
+
+            $officialFact = $this->dailyCalculator->calculate($date, $settings, ...$officialPunches);
+            $estimatedFact = $estimatedPunches === $officialPunches
+                ? $officialFact
+                : $this->dailyCalculator->calculate($date, $settings, ...$estimatedPunches);
+
+            if (!$isRepos) {
                 // Tous les pointages du jour (y compris prévisionnels) : un TT en
                 // demi-journée précise s'appuie sur des horaires saisis avant tout
                 // pointage réel — le seul indice disponible tant qu'aucun n'existe.
-                $fact = $this->eventValorizer->valorize($fact, $allByDate[$key] ?? [], $event, $settings);
+                // L'événement est déclaré, donc officiel : les deux versions en
+                // héritent de la même façon.
+                $officialFact = $this->eventValorizer->valorize($officialFact, $allByDate[$key] ?? [], $event, $settings);
+                $estimatedFact = $this->eventValorizer->valorize($estimatedFact, $allByDate[$key] ?? [], $event, $settings);
             }
-            $dayFacts[] = $fact;
+
+            $officialFacts[] = $officialFact;
+            $estimatedFacts[] = $estimatedFact;
 
             $reading = $employerReadingsByDate[$key] ?? null;
             $reconciliation = $this->reconciliationDetector->reconcile(
                 $date,
-                $fact->workedMinutes(),
+                $estimatedFact->workedMinutes(),
                 $reading,
                 $today,
-                $settings->estJourDeRepos($date),
+                $isRepos,
             );
 
-            $workDays[] = new WorkDay($date, $fact, $reading, $reconciliation, $event);
+            $workDays[] = new WorkDay($date, $estimatedFact, $reading, $reconciliation, $event);
         }
 
-        return new WorkWeek($this->weeklyCalculator->aggregate($settings, ...$dayFacts), $workDays);
+        return new WorkWeek(
+            $this->weeklyCalculator->aggregate($settings, ...$officialFacts),
+            $this->weeklyCalculator->aggregate($settings, ...$estimatedFacts),
+            $workDays,
+        );
     }
 
     /**

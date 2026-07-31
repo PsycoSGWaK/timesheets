@@ -97,6 +97,23 @@ final class WorkWeekAssemblerTest extends TestCase
     }
 
     #[Test]
+    public function a_provisional_only_day_feeds_the_estimate_but_never_the_official_counters(): void
+    {
+        // "Travaillé"/RTT/heures sup ne doivent jamais bouger sur une simple saisie
+        // manuelle : seul le réel ADP les alimente. "Travail estimé" en revanche
+        // reflète la saisie, pour se projeter sans polluer les compteurs officiels.
+        $punches = [
+            PunchEvent::provisional($this->user, new \DateTimeImmutable('2026-07-22'), Minutes::fromClock('08:00'), 1),
+            PunchEvent::provisional($this->user, new \DateTimeImmutable('2026-07-22'), Minutes::fromClock('16:00'), 2),
+        ];
+
+        $week = $this->assemble($punches, []);
+
+        self::assertSame(0, $week->weekFact()->workedMinutes()->value());
+        self::assertSame(480, $week->estimatedWeekFact()->workedMinutes()->value());
+    }
+
+    #[Test]
     public function a_real_punch_takes_precedence_over_a_lingering_provisional_one(): void
     {
         // Ne devrait pas arriver en pratique (DayController bascule tout complément
