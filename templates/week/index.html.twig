@@ -63,7 +63,7 @@
     }
     .week-picker button:hover { color: var(--text-primary); border-color: var(--accent); }
 
-    .stat-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: .9rem; margin: 0 0 1.25rem; }
+    .stat-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: .9rem; margin: 0 0 1.25rem; }
     .stat-tile {
         background: var(--surface-card); border: 1px solid var(--gridline); border-radius: 10px;
         padding: .9rem 1rem;
@@ -225,6 +225,10 @@
         <div class="stat-tile">
             <span class="stat-tile__label">Travaillé</span>
             <span class="stat-tile__value">{{ workWeek.weekFact.workedMinutes.value|duree }}</span>
+        </div>
+        <div class="stat-tile">
+            <span class="stat-tile__label">Travail estimé</span>
+            <span class="stat-tile__value">{{ workWeek.estimatedWeekFact.workedMinutes.value|duree }}</span>
         </div>
         <div class="stat-tile">
             <span class="stat-tile__label">RTT acquis</span>
