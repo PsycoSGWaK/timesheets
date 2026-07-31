@@ -132,6 +132,12 @@
     }
     .event-form button:hover { color: var(--text-primary); border-color: var(--accent); }
 
+    .adp-remove-btn {
+        border: 1px solid var(--accent); border-radius: 6px; background: transparent;
+        color: var(--accent); font: inherit; font-size: .78rem; padding: .25rem .55rem; cursor: pointer;
+    }
+    .adp-remove-btn:hover { background: var(--accent); color: var(--accent-ink); }
+
     .error { background: var(--status-critical-bg); color: var(--status-critical);
         padding: .75rem 1rem; border-radius: 8px; font-weight: 600; margin-bottom: 1rem; }
     .stat-tile__action { margin-top: .5rem; }
@@ -292,6 +298,7 @@
                 <th class="num">ADP</th>
                 <th class="num">Écart</th>
                 <th>Rapprochement</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
@@ -350,6 +357,14 @@
                     </td>
                     <td>
                         <span class="status-pill status-{{ tone }}">{{ reco.status.label }}</span>
+                    </td>
+                    <td>
+                        {% if day.employerReading is not null %}
+                            <form method="post" action="{{ path('employer_reading_remove') }}">
+                                <input type="hidden" name="date" value="{{ day.date|date('Y-m-d') }}">
+                                <button type="submit" class="adp-remove-btn" title="Supprimer le relevé ADP de ce jour">Supprimer ADP</button>
+                            </form>
+                        {% endif %}
                     </td>
                 </tr>
             {% endfor %}
