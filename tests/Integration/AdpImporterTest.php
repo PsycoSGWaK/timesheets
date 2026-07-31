@@ -6,6 +6,7 @@ namespace App\Tests\Integration;
 
 use App\Domain\Adp\AdpParser;
 use App\Domain\Adp\ImportPlanner;
+use App\Domain\Time\Minutes;
 use App\Entity\EmployerReading;
 use App\Entity\PunchEvent;
 use App\Entity\RawImport;
@@ -74,6 +75,22 @@ final class AdpImporterTest extends KernelTestCase
         self::assertSame(4, $this->countRows(PunchEvent::class));  // pointages inchangés
         self::assertSame(4, $this->countRows(EmployerReading::class)); // relevés doublés
         self::assertSame(2, $this->countRows(RawImport::class));
+    }
+
+    #[Test]
+    public function a_provisional_punch_at_the_same_slot_as_the_incoming_real_one_is_superseded_without_conflict(): void
+    {
+        // Cas réel qui plantait en prod : un pointage prévisionnel (saisi via « Quand
+        // partir ? » ou un jour édité à la main) occupe déjà (date, heure, rang) au
+        // moment où ADP livre un réel pour ce même créneau exact. Le remplacement doit
+        // passer, pas heurter la contrainte d'unicité.
+        $this->entityManager->persist(PunchEvent::provisional($this->user, new \DateTimeImmutable('2026-07-20'), Minutes::of(510), 1));
+        $this->entityManager->flush();
+
+        $plan = $this->importer->import($this->user, $this->paste(), 2026, new \DateTimeImmutable('2026-07-24 03:00:00'));
+
+        self::assertCount(1, $plan->provisionalToSupersede());
+        self::assertSame(4, $this->countRows(PunchEvent::class));
     }
 
     /**

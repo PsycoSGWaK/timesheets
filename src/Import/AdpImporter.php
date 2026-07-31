@@ -20,9 +20,11 @@ use Doctrine\ORM\EntityManagerInterface;
  *
  * Toute la décision vit dans {@see ImportPlanner} (pur, sans base) ; ce service se
  * contente de la traduire en opérations Doctrine (persist / remove) au sein d'une
- * seule transaction (un flush). L'import est idempotent sur les pointages grâce à la
- * contrainte d'unicité (date, heure, rang) ; les relevés ADP, eux, s'ajoutent à
- * chaque passage.
+ * seule transaction, en deux flush (suppressions puis créations : dans un flush
+ * unique Doctrine exécute les INSERT avant les DELETE, ce qui violerait la
+ * contrainte d'unicité quand un réel arrive au créneau d'un prévisionnel
+ * superseder). L'import est idempotent sur les pointages grâce à la contrainte
+ * d'unicité (date, heure, rang) ; les relevés ADP, eux, s'ajoutent à chaque passage.
  */
 final class AdpImporter
 {
@@ -44,17 +46,20 @@ final class AdpImporter
 
         $plan = $this->planner->plan($user, $week, $importedAt, $this->existingPunchesByDate($user, $week));
 
-        foreach ($plan->provisionalToSupersede() as $punch) {
-            $this->entityManager->remove($punch);
-        }
-        foreach ($plan->punchesToCreate() as $punch) {
-            $this->entityManager->persist($punch);
-        }
-        foreach ($plan->readingsToRecord() as $reading) {
-            $this->entityManager->persist($reading);
-        }
+        $this->entityManager->wrapInTransaction(function () use ($plan): void {
+            foreach ($plan->provisionalToSupersede() as $punch) {
+                $this->entityManager->remove($punch);
+            }
+            $this->entityManager->flush();
 
-        $this->entityManager->flush();
+            foreach ($plan->punchesToCreate() as $punch) {
+                $this->entityManager->persist($punch);
+            }
+            foreach ($plan->readingsToRecord() as $reading) {
+                $this->entityManager->persist($reading);
+            }
+            $this->entityManager->flush();
+        });
 
         return $plan;
     }
