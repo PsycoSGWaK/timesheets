@@ -75,12 +75,12 @@
     }
     .stat-tile--overtime .stat-tile__value { color: var(--status-serious); }
 
+    .projection-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: .9rem; margin: 0 0 1.5rem; }
     .projection {
-        margin: 0 0 1.5rem; padding: .9rem 1.1rem; border: 1px solid var(--gridline);
-        border-radius: 10px; background: var(--surface-card); font-size: .94rem; color: var(--text-secondary);
+        margin: 0; padding: .7rem .9rem; border: 1px solid var(--gridline);
+        border-radius: 10px; background: var(--surface-card); font-size: .86rem; color: var(--text-secondary);
     }
     .projection strong { color: var(--accent); font-variant-numeric: tabular-nums; }
-    .projection-target { margin-bottom: .6rem; }
     .projection-target__label { display: block; font-weight: 600; color: var(--text-primary); margin-bottom: .15rem; }
 
     table { width: 100%; border-collapse: collapse; font-size: .92rem; }
@@ -270,27 +270,29 @@
         </div>
     {% endif %}
 
-    {% for target in [
-        {modifier: 'reference', label: 'Vers ' ~ projectionReference.objective.value|duree ~ ' (RTT)', projection: projectionReference},
-        {modifier: 'bascule', label: 'Vers ' ~ projection.objective.value|duree ~ ' (bascule HS)', projection: projection},
-    ] %}
-        {% set p = target.projection %}
-        <div class="projection projection-target projection-target--{{ target.modifier }}">
-            <span class="projection-target__label">{{ target.label }}</span>
-            {% if p.objectiveReached %}
-                Objectif atteint.
-                {% if p.overtimeSoFar.value > 0 %}
-                    <strong>{{ p.overtimeSoFar.value|duree }}</strong> au-delà.
+    <div class="projection-row">
+        {% for target in [
+            {modifier: 'reference', label: 'Vers ' ~ projectionReference.objective.value|duree ~ ' (RTT)', projection: projectionReference},
+            {modifier: 'bascule', label: 'Vers ' ~ projection.objective.value|duree ~ ' (bascule HS)', projection: projection},
+        ] %}
+            {% set p = target.projection %}
+            <div class="projection projection-target projection-target--{{ target.modifier }}">
+                <span class="projection-target__label">{{ target.label }}</span>
+                {% if p.objectiveReached %}
+                    Objectif atteint.
+                    {% if target.modifier == 'bascule' and p.overtimeSoFar.value > 0 %}
+                        <strong>{{ p.overtimeSoFar.value|duree }}</strong> au-delà.
+                    {% endif %}
+                {% elseif p.remainingWorkingDays > 0 %}
+                    Il reste <strong>{{ p.remainingToObjective.value|duree }}</strong>,
+                    soit <strong>{{ p.targetPerRemainingDay.value|duree }}</strong> par jour
+                    sur {{ p.remainingWorkingDays }} jour(s) restant(s).
+                {% else %}
+                    Il manque <strong>{{ p.remainingToObjective.value|duree }}</strong>, sans jour ouvré restant cette semaine.
                 {% endif %}
-            {% elseif p.remainingWorkingDays > 0 %}
-                Il reste <strong>{{ p.remainingToObjective.value|duree }}</strong>,
-                soit <strong>{{ p.targetPerRemainingDay.value|duree }}</strong> par jour
-                sur {{ p.remainingWorkingDays }} jour(s) restant(s).
-            {% else %}
-                Il manque <strong>{{ p.remainingToObjective.value|duree }}</strong>, sans jour ouvré restant cette semaine.
-            {% endif %}
-        </div>
-    {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
 
     <table class="week-table">
         <thead>
